@@ -18,9 +18,9 @@ import {
   Typography,
   ToggleButton,
   ToggleButtonGroup,
-  Input,
+  Input, TextField, Button,
 } from "@mui/material";
-import { useLayoutEffect, useState } from "react";
+import {useLayoutEffect, useRef, useState} from "react";
 import AccountBoxIcon from "@mui/icons-material/AccountBox";
 import SettingsAccessibilityIcon from "@mui/icons-material/SettingsAccessibility";
 import TvIcon from "@mui/icons-material/Tv";
@@ -29,6 +29,10 @@ import SpellcheckIcon from "@mui/icons-material/Spellcheck";
 import SettingsBrightnessIcon from "@mui/icons-material/SettingsBrightness";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
+import {useAuth} from "../components/AuthContext.tsx";
+import {APIUser} from "../API/API_Interfaces.tsx";
+import {updateUser} from "../API/API_UpdateMethods.tsx";
+
 
 const Settings = () => {
   const { theme } = useCustomTheme();
@@ -191,7 +195,61 @@ const Settings = () => {
 };
 
 const ProfileMenu = () => {
-  return <Typography component={"h1"}>Work In Progress</Typography>;
+  const { user: loggedInUser } = useAuth(); // Get logged in user info from AuthContext
+  const { theme } = useCustomTheme();
+  const data = useRef(loggedInUser as APIUser);
+  data.current=loggedInUser as APIUser;
+  return loggedInUser?<List
+      sx={{
+        color: theme.palette.text.primary,
+        fontSize: theme.typography.fontSize + 4,
+      }}
+      subheader="Account Info"
+  >
+    <ListItem sx={{paddingTop: theme.spacing(2)}}>
+      <TextField
+            sx={{
+              width: "100%",
+            }}
+            label="Username"
+            required
+            defaultValue={loggedInUser?.username}
+            onChange={(e) => 
+                data.current.username=e.target.value}
+      />
+    </ListItem>
+    <ListItem>
+      <TextField
+          sx={{
+            width: "100%",
+          }}
+          label="Email"
+          required
+          defaultValue={loggedInUser?.email}
+          onChange={(e) =>
+              data.current.email=e.target.value}
+
+      />
+    </ListItem>
+    <ListItem>
+      <Button
+          color="primary"
+          variant="contained"
+          onClick={() => updateUser(data.current)}
+      >
+        Link to Google
+      </Button>
+    </ListItem>
+    <ListItem>
+      <Button
+          color="primary"
+          variant="contained"
+          onClick={() => updateUser(data.current)}
+      >
+        Save Changes
+      </Button>
+    </ListItem>
+  </List>:<Typography>No User Listed</Typography>
 };
 
 const AppearanceMenu = () => {
