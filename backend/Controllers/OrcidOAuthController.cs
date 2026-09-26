@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using System.Diagnostics.CodeAnalysis;
-using ChemistryCafeAPI.Models;
 using ChemistryCafeAPI.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
@@ -11,24 +10,17 @@ namespace ChemistryCafeAPI.Controllers
     /// Controls routes related to Orcid OAuth 2.0 authentication
     /// </summary>
     [Route("/auth/orcid")]
-    public class OrcidOAuthController : Controller
+    public class OrcidOAuthController(OrcidOAuthService orcidOAuthService) : BaseHelperController(orcidOAuthService.UserService)
     {
-        private readonly OrcidOAuthService _orcidOAuthService;
-
-        private readonly string _baseUri = Environment.GetEnvironmentVariable("BACKEND_BASE_URL") ?? "";
-        private readonly string _frontendHost = Environment.GetEnvironmentVariable("FRONTEND_HOST") ?? "";
-        public OrcidOAuthController(OrcidOAuthService orcidOAuthService)
-        {
-            _orcidOAuthService = orcidOAuthService;
-        }
-
+       
+       
         /// <summary>
         /// Route which the user redirects to a orcid authentication page 
         /// </summary>
         [HttpGet("login")]
         public IActionResult LoginRedirect()
         {
-            string redirectUri = Path.Combine(_baseUri, "auth/orcid/authenticate").Replace('\\', '/');
+            string redirectUri = Path.Combine(BaseUri, "auth/orcid/authenticate").Replace('\\', '/');
             AuthenticationProperties authProperties = new AuthenticationProperties { RedirectUri = redirectUri };
             authProperties.SetParameter("prompt", "select_account");
             return new ChallengeResult("Orcid", authProperties);
@@ -47,15 +39,15 @@ namespace ChemistryCafeAPI.Controllers
             {
                 return BadRequest("Orcid OAuth Http Response did not succeed");
             }
-
-            ClaimsPrincipal? claimsIdentity = await _orcidOAuthService.GetUserClaimsAsync(result);
+            
+            ClaimsPrincipal? claimsIdentity = await orcidOAuthService.GetUserClaimsAsync(result);
             if (claimsIdentity == null)
             {
                 return BadRequest("Invalid Credentials Passed");
             }
 
             await HttpContext.SignInAsync("Application", claimsIdentity);
-            string redirectUrl = Path.Combine(_frontendHost, "dashboard").Replace('\\', '/');
+            string redirectUrl = Path.Combine(FrontendHost, "dashboard").Replace('\\', '/');
             RedirectResult ret = Redirect(redirectUrl);
             return ret;
         }

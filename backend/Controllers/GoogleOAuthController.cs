@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using System.Diagnostics.CodeAnalysis;
-using ChemistryCafeAPI.Models;
 using ChemistryCafeAPI.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
@@ -12,16 +11,8 @@ namespace ChemistryCafeAPI.Controllers
     /// Controls routes related to Google OAuth 2.0 authentication
     /// </summary>
     [Route("/auth/google")]
-    public class GoogleOAuthController : Controller
+    public class GoogleOAuthController(GoogleOAuthService googleOAuthService) : BaseHelperController(googleOAuthService.UserService)
     {
-        private readonly GoogleOAuthService _googleOAuthService;
-
-        private readonly string _baseUri = Environment.GetEnvironmentVariable("BACKEND_BASE_URL") ?? "";
-        private readonly string _frontendHost = Environment.GetEnvironmentVariable("FRONTEND_HOST") ?? "";
-        public GoogleOAuthController(GoogleOAuthService googleOAuthService)
-        {
-            _googleOAuthService = googleOAuthService;
-        }
 
         /// <summary>
         /// Route which the user redirects to a google authentication page 
@@ -29,7 +20,7 @@ namespace ChemistryCafeAPI.Controllers
         [HttpGet("login")]
         public IActionResult LoginRedirect()
         {
-            string redirectUri = Path.Combine(_baseUri, "auth/google/authenticate").Replace('\\', '/');
+            string redirectUri = Path.Combine(BaseUri, "auth/google/authenticate").Replace('\\', '/');
             AuthenticationProperties authProperties = new AuthenticationProperties { RedirectUri = redirectUri };
             authProperties.SetParameter("prompt", "select_account");
             return new ChallengeResult(GoogleDefaults.AuthenticationScheme, authProperties);
@@ -49,14 +40,14 @@ namespace ChemistryCafeAPI.Controllers
                 return BadRequest("Google OAuth Http Response did not succeed");
             }
 
-            ClaimsPrincipal? claimsIdentity = await _googleOAuthService.GetUserClaimsAsync(result);
+            ClaimsPrincipal? claimsIdentity = await googleOAuthService.GetUserClaimsAsync(result);
             if (claimsIdentity == null)
             {
                 return BadRequest("Invalid Credentials Passed");
             }
 
             await HttpContext.SignInAsync("Application", claimsIdentity);
-            string redirectUrl = Path.Combine(_frontendHost, "dashboard").Replace('\\', '/');
+            string redirectUrl = Path.Combine(FrontendHost, "dashboard").Replace('\\', '/');
             RedirectResult ret = Redirect(redirectUrl);
             return ret;
         }

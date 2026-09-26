@@ -1,7 +1,6 @@
 
 using System.Security.Claims;
 using ChemistryCafeAPI.Models;
-using ChemistryCafeAPI.Services;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Authentication;
 
@@ -10,15 +9,10 @@ namespace ChemistryCafeAPI.Services
     /// <summary>
     /// Adapted from: https://blog.rashik.com.np/adding-google-authentication-in-net-core-application-without-identity/
     /// </summary>
-    public class OrcidOAuthService
+    public class OrcidOAuthService(UserService userService)
     {
 
-        private readonly UserService _userService;
-
-        public OrcidOAuthService(UserService userService)
-        {
-            _userService = userService;
-        }
+        public readonly UserService UserService=userService;
 
         [ExcludeFromCodeCoverage]
         private static bool IsOrcidIdentity(ClaimsIdentity identity)
@@ -54,7 +48,7 @@ namespace ChemistryCafeAPI.Services
             }
             string displayName = nameClaim?.Value ?? "ORCID User";
 
-            User user = await _userService.SignInOrcid(orcidId.Value, displayName);
+            User user = await UserService.SignInOrcid(orcidId.Value, displayName);
 
             Claim nameIdClaim = new Claim(ClaimTypes.NameIdentifier, user.Id.ToString());
 

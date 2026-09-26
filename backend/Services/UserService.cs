@@ -4,19 +4,12 @@ using Microsoft.EntityFrameworkCore;
 namespace ChemistryCafeAPI.Services
 {
 
-    public class UserService
+    public class UserService(ChemistryDbContext context)
     {
-
-        private readonly ChemistryDbContext _context;
-
-        public UserService(ChemistryDbContext context)
-        {
-            _context = context;
-        }
 
         public async Task<IReadOnlyList<User>> GetUsersAsync()
         {
-            return await _context.Users.ToListAsync();
+            return await context.Users.ToListAsync();
         }
 
         /// <summary>
@@ -26,7 +19,7 @@ namespace ChemistryCafeAPI.Services
         /// <returns>Tracked user object if found</returns>
         public async Task<User?> GetUserByIdAsync(Guid id)
         {
-            return await _context.Users.SingleOrDefaultAsync(u => u.Id == id);
+            return await context.Users.SingleOrDefaultAsync(u => u.Id == id);
         }
 
         /// <summary>
@@ -36,7 +29,7 @@ namespace ChemistryCafeAPI.Services
         /// <returns>Tracked user object if found</returns>
         public async Task<User?> GetUserByGoogleIdAsync(string id)
         {
-            return await _context.Users.SingleOrDefaultAsync(u => u.GoogleId == id);
+            return await context.Users.SingleOrDefaultAsync(u => u.GoogleId == id);
         }
 
         /// <summary>
@@ -46,7 +39,7 @@ namespace ChemistryCafeAPI.Services
         /// <returns>Tracked user object if found</returns>
         public async Task<User?> GetUserByEmailAsync(string email)
         {
-            return await _context.Users.SingleOrDefaultAsync(u => u.Email == email);
+            return await context.Users.SingleOrDefaultAsync(u => u.Email == email);
         }
 
         /// <summary>
@@ -58,7 +51,7 @@ namespace ChemistryCafeAPI.Services
         /// <returns>Tracked user object</returns>
         public async Task<User> SignInGoogle(string googleID, string email)
         {
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.GoogleId == googleID);
+            var user = await context.Users.SingleOrDefaultAsync(u => u.GoogleId == googleID);
             if (user == null)
             {
                 user = new User();
@@ -68,14 +61,14 @@ namespace ChemistryCafeAPI.Services
                 user.Email = email;
                 user.CreatedDate = DateTime.UtcNow;
                 user.GoogleId = googleID;
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
+                context.Users.Add(user);
+                await context.SaveChangesAsync();
             }
             else
             {
                 user.Email = email;
             }
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return user;
         }
         /// <summary>
@@ -87,7 +80,7 @@ namespace ChemistryCafeAPI.Services
         /// <returns>Tracked user object</returns>
         public async Task<User> SignInOrcid(string orcidID, string name)
         {
-            var user = await _context.Users.SingleOrDefaultAsync(u => u.OrcidId == orcidID);
+            var user = await context.Users.SingleOrDefaultAsync(u => u.OrcidId == orcidID);
             if (user == null)
             {
                 user = new User();
@@ -96,10 +89,10 @@ namespace ChemistryCafeAPI.Services
                 user.Role = "unverified";
                 user.CreatedDate = DateTime.UtcNow;
                 user.OrcidId = orcidID;
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
+                context.Users.Add(user);
+                await context.SaveChangesAsync();
             }
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return user;
         }
 
@@ -142,7 +135,7 @@ namespace ChemistryCafeAPI.Services
             }
             existingUser.Username = user.Username;
             existingUser.Email = user.Email;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return QueryResult.Success;
         }
 
@@ -173,7 +166,7 @@ namespace ChemistryCafeAPI.Services
                 return QueryResult.NoAccess;
             }
 
-            await _context.Users.Where(u => u.Id == id).ExecuteDeleteAsync();
+            await context.Users.Where(u => u.Id == id).ExecuteDeleteAsync();
             return QueryResult.Success;
         }
     }

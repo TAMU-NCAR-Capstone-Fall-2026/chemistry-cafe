@@ -1,7 +1,6 @@
 
 using System.Security.Claims;
 using ChemistryCafeAPI.Models;
-using ChemistryCafeAPI.Services;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.AspNetCore.Authentication;
 
@@ -10,15 +9,10 @@ namespace ChemistryCafeAPI.Services
     /// <summary>
     /// Adapted from: https://blog.rashik.com.np/adding-google-authentication-in-net-core-application-without-identity/
     /// </summary>
-    public class GoogleOAuthService
+    public class GoogleOAuthService(UserService userService)
     {
 
-        private readonly UserService _userService;
-
-        public GoogleOAuthService(UserService userService)
-        {
-            _userService = userService;
-        }
+        public readonly UserService UserService = userService;
 
         [ExcludeFromCodeCoverage]
         private static bool IsGoogleIdentity(ClaimsIdentity identity)
@@ -53,7 +47,7 @@ namespace ChemistryCafeAPI.Services
                 return null;
             }
 
-            User user = await _userService.SignInGoogle(googleId.Value, emailClaim.Value);
+            User user = await UserService.SignInGoogle(googleId.Value, emailClaim.Value);
 
             Claim nameIdClaim = new Claim(ClaimTypes.NameIdentifier, user.Id.ToString());
 
