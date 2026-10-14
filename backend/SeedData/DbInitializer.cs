@@ -56,6 +56,16 @@ public static class DbInitializer
             Owner = owner,
         };
 
+        var version = new FamilyVersion
+        {
+            Id = Guid.NewGuid(),
+            Family = family,
+            FamilyId = family.Id
+        };
+        family.CurrentVersion = version;
+        family.CurrentVersionId = version.Id;
+        family.Versions.Add(version);
+
         var speciesByName = new Dictionary<string, Species>();
         foreach (var seedSpecies in seedFamily.Species)
         {
@@ -69,10 +79,10 @@ public static class DbInitializer
                 ConstantMixingRatio = seedSpecies.ConstantMixingRatio,
                 IsThirdBody = seedSpecies.IsThirdBody,
                 OtherProperties = seedSpecies.OtherProperties,
-                Family = family,
+                FamilyVersion = version,
             };
             speciesByName[species.Name] = species;
-            family.Species.Add(species);
+            version.Species.Add(species);
         }
 
         var phaseByName = new Dictionary<string, Phase>();
@@ -82,14 +92,14 @@ public static class DbInitializer
             {
                 Id = Guid.NewGuid(),
                 Name = seedPhase.Name,
-                Family = family,
+                FamilyVersion = version,
             };
             foreach (var speciesName in seedPhase.Species)
             {
                 phase.Species.Add(speciesByName[speciesName]);
             }
             phaseByName[phase.Name] = phase;
-            family.Phases.Add(phase);
+            version.Phases.Add(phase);
         }
 
         foreach (var seedMechanism in seedFamily.Mechanisms)
@@ -98,7 +108,7 @@ public static class DbInitializer
             {
                 Id = Guid.NewGuid(),
                 Name = seedMechanism.Name,
-                Family = family,
+                FamilyVersion = version,
             };
 
             foreach (var speciesName in seedMechanism.Species)
@@ -117,7 +127,7 @@ public static class DbInitializer
                     Id = Guid.NewGuid(),
                     Name = seedReaction.Name,
                     ReactionType = seedReaction.Type,
-                    Family = family,
+                    FamilyVersion = version,
                     GasPhase = seedReaction.GasPhase is null ? null : phaseByName[seedReaction.GasPhase],
                     GasPhaseSpecies = seedReaction.GasPhaseSpecies is null
                         ? null
@@ -154,11 +164,11 @@ public static class DbInitializer
                         Branch = product.Branch,
                     });
                 }
-                family.Reactions.Add(reaction);
+                version.Reactions.Add(reaction);
                 mechanism.Reactions.Add(reaction);
             }
 
-            family.Mechanisms.Add(mechanism);
+            version.Mechanisms.Add(mechanism);
         }
 
         return family;
