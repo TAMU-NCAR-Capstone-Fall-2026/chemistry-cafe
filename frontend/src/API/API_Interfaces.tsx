@@ -35,6 +35,15 @@ export interface APIFamily {
   mechanisms: Array<APIMechanism>;
 }
 
+export interface APIFamilyVersion {
+  id: UUID;
+  familyId: UUID;
+  createdDate?: string;
+  species: Array<APISpecies>;
+  reactions: Array<APIReaction>;
+  phases: Array<APIPhase>;
+}
+
 export interface APISpecies {
   absoluteTolerance?: number;
   constantConcentration?: number;
@@ -178,4 +187,8 @@ export interface APIMechanism {
   reactionIds: Array<UUID>;
   phaseIds: Array<UUID>;
   familyId: UUID;
+  familyVersionId?: UUID;
+  isReadOnly?: boolean;
+  validationStatus?: string;
+  validatedBy?: string | null;
 }

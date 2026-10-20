@@ -144,10 +144,11 @@ namespace ChemistryCafeAPI.Tests.Functional
                     Family = testFamily,
                     FamilyId = TestFamilyId
                 };
-                testFamily.CurrentVersion = testVersion;
                 testFamily.Versions.Add(testVersion);
                 db.Families.Add(testFamily);
+                db.FamilyVersions.Add(testVersion);
                 db.SaveChanges();
+                testFamily.CurrentVersion = testVersion;
                 testFamily.CurrentVersionId = testVersion.Id;
                 db.SaveChanges();
             }
@@ -223,10 +224,11 @@ namespace ChemistryCafeAPI.Tests.Functional
                 Family = family,
                 FamilyId = familyId
             };
-            family.CurrentVersion = version;
             family.Versions.Add(version);
             db.Families.Add(family);
+            db.FamilyVersions.Add(version);
             await db.SaveChangesAsync();
+            family.CurrentVersion = version;
             family.CurrentVersionId = version.Id;
             await db.SaveChangesAsync();
             return family;
@@ -252,10 +254,11 @@ namespace ChemistryCafeAPI.Tests.Functional
                 Family = family,
                 FamilyId = familyId
             };
-            family.CurrentVersion = version;
             family.Versions.Add(version);
             db.Families.Add(family);
+            db.FamilyVersions.Add(version);
             db.SaveChanges();
+            family.CurrentVersion = version;
             family.CurrentVersionId = version.Id;
             db.SaveChanges();
             return family;
