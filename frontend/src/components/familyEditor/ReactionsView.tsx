@@ -66,7 +66,6 @@ export const ReactionsView = ({ family, updateFamily }: ViewProps) => {
       reactions: reactionList,
     });
   };
-
   const addSpeciesToPhase = (phaseId: UUID, speciesIds: Array<UUID>) => {
     updateFamily({
       ...family,
@@ -82,12 +81,18 @@ export const ReactionsView = ({ family, updateFamily }: ViewProps) => {
     });
   };
 
+  const editReaction = (id: UUID) => {
+    setSelectedReaction(family.reactions.find((element) => element.id === id));
+    setReactionsEditorOpen(true);
+  };
+
   return (
     <Box
       sx={{
         display: "flex",
         flexDirection: "column",
         height: "100%",
+        minHeight: 0,
       }}
     >
       <Box
@@ -114,16 +119,12 @@ export const ReactionsView = ({ family, updateFamily }: ViewProps) => {
             handleDeleteButtonClick={() => {
               removeReaction(id);
             }}
-            handleEditButtonClick={() => {
-              setSelectedReaction(
-                family.reactions.find((element) => element.id === id),
-              );
-              setReactionsEditorOpen(true);
-            }}
+            handleEditButtonClick={() => editReaction(id)}
           />,
         ]}
         onRowUpdate={updateReaction}
         onAdd={createReaction}
+        onEdit={editReaction}
       />
       <ReactionEditorModal
         open={reactionsEditorOpen}

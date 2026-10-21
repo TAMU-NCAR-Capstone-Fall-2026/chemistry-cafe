@@ -75,6 +75,18 @@ const RemoveFromMechanismButton = ({
   </Tooltip>
 );
 
+/**
+ * The panel of a tab with a table. It fills the height under the tabs, so the
+ * table scrolls inside it and the page does not grow with the rows. The
+ * minimum height of 0 lets the panel become smaller than its table.
+ */
+const tablePanelSx = {
+  display: "flex",
+  flexDirection: "column",
+  flex: 1,
+  minHeight: 0,
+} as const;
+
 export const MechanismEditor: React.FC<MechanismEditorProps> = ({
   family,
   mechanism,
@@ -247,6 +259,7 @@ export const MechanismEditor: React.FC<MechanismEditorProps> = ({
         display: "flex",
         flexDirection: "column",
         minHeight: 0,
+        flex: 1,
       }}
       component="section"
     >
@@ -456,14 +469,7 @@ export const MechanismEditor: React.FC<MechanismEditorProps> = ({
         </Box>
       )}
       {selectedTab === TabValue.Species && (
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            flex: 1,
-            minHeight: 0,
-          }}
-        >
+        <Box sx={tablePanelSx}>
           <Typography color="textPrimary" variant="h5">
             {mechanism.name || "<No Name>"} Species
           </Typography>
@@ -507,14 +513,7 @@ export const MechanismEditor: React.FC<MechanismEditorProps> = ({
         </Box>
       )}
       {selectedTab === TabValue.Reactions && (
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            flex: 1,
-            minHeight: 0,
-          }}
-        >
+        <Box sx={tablePanelSx}>
           <Typography color="textPrimary" variant="h5">
             {mechanism.name || "<No Name>"} Reactions
           </Typography>
@@ -561,14 +560,7 @@ export const MechanismEditor: React.FC<MechanismEditorProps> = ({
         </Box>
       )}
       {selectedTab === TabValue.Phases && (
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            flex: 1,
-            minHeight: 0,
-          }}
-        >
+        <Box sx={tablePanelSx}>
           <Typography color="textPrimary" variant="h5">
             {mechanism.name || "<No Name>"} Phases
           </Typography>

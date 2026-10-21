@@ -153,6 +153,7 @@ export const MechanismsView = ({ family, updateFamily }: ViewProps) => {
             onClick={() => setMechanismCreationModalOpen(true)}
             startIcon={<AddIcon />}
             color="primary"
+            sx={{ alignSelf: "flex-start" }}
           >
             <Typography variant="caption">Create New Mechanism</Typography>
           </Button>
