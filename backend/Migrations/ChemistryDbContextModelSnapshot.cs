@@ -368,6 +368,9 @@ namespace ChemistryCafeAPI.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<Guid?>("PhaseId")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("ReactionType")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -388,6 +391,8 @@ namespace ChemistryCafeAPI.Migrations
                     b.HasIndex("GasPhaseId");
 
                     b.HasIndex("GasPhaseSpeciesId");
+
+                    b.HasIndex("PhaseId");
 
                     b.ToTable("Reactions");
                 });
@@ -903,6 +908,11 @@ namespace ChemistryCafeAPI.Migrations
                         .HasForeignKey("GasPhaseSpeciesId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("ChemistryCafeAPI.Models.Phase", "Phase")
+                        .WithMany("AsReactionPhase")
+                        .HasForeignKey("PhaseId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("AerosolPhase");
 
                     b.Navigation("AerosolPhaseSpecies");
@@ -914,6 +924,8 @@ namespace ChemistryCafeAPI.Migrations
                     b.Navigation("GasPhase");
 
                     b.Navigation("GasPhaseSpecies");
+
+                    b.Navigation("Phase");
                 });
 
             modelBuilder.Entity("ChemistryCafeAPI.Models.Species", b =>
@@ -1025,6 +1037,8 @@ namespace ChemistryCafeAPI.Migrations
                     b.Navigation("AsAerosolPhase");
 
                     b.Navigation("AsGasPhase");
+
+                    b.Navigation("AsReactionPhase");
 
                     b.Navigation("PhaseSpecies");
                 });
