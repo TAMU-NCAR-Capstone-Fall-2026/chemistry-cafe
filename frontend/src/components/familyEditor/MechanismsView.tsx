@@ -122,7 +122,14 @@ export const MechanismsView = ({ family, updateFamily }: ViewProps) => {
   }, [family.id]);
 
   return (
-    <Box>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        minHeight: 0,
+      }}
+    >
       <Box
         sx={{
           display: "flex",
@@ -151,7 +158,17 @@ export const MechanismsView = ({ family, updateFamily }: ViewProps) => {
           </Button>
         </Tooltip>
       )}
-      {menuComponent}
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: "flex",
+          flexDirection: "column",
+          overflow: selectedMechanism ? "hidden" : "auto",
+        }}
+      >
+        {menuComponent}
+      </Box>
       <MechanismCreationModal
         open={mechanismCreationModalOpen}
         familyId={family.id}

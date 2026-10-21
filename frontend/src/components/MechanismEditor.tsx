@@ -244,6 +244,9 @@ export const MechanismEditor: React.FC<MechanismEditorProps> = ({
       sx={{
         width: "100%",
         height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        minHeight: 0,
       }}
       component="section"
     >
@@ -296,7 +299,9 @@ export const MechanismEditor: React.FC<MechanismEditorProps> = ({
           sx={{
             display: "flex",
             flexDirection: "column",
-            height: "100%",
+            flex: 1,
+            minHeight: 0,
+            overflow: "auto",
             rowGap: "1em",
           }}
         >
@@ -451,7 +456,14 @@ export const MechanismEditor: React.FC<MechanismEditorProps> = ({
         </Box>
       )}
       {selectedTab === TabValue.Species && (
-        <div>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
           <Typography color="textPrimary" variant="h5">
             {mechanism.name || "<No Name>"} Species
           </Typography>
@@ -492,10 +504,17 @@ export const MechanismEditor: React.FC<MechanismEditorProps> = ({
               ) : undefined
             }
           />
-        </div>
+        </Box>
       )}
       {selectedTab === TabValue.Reactions && (
-        <div>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
           <Typography color="textPrimary" variant="h5">
             {mechanism.name || "<No Name>"} Reactions
           </Typography>
@@ -539,10 +558,17 @@ export const MechanismEditor: React.FC<MechanismEditorProps> = ({
               ) : undefined
             }
           />
-        </div>
+        </Box>
       )}
       {selectedTab === TabValue.Phases && (
-        <div>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            flex: 1,
+            minHeight: 0,
+          }}
+        >
           <Typography color="textPrimary" variant="h5">
             {mechanism.name || "<No Name>"} Phases
           </Typography>
@@ -583,7 +609,7 @@ export const MechanismEditor: React.FC<MechanismEditorProps> = ({
               ) : undefined
             }
           />
-        </div>
+        </Box>
       )}
     </Box>
   );

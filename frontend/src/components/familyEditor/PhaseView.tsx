@@ -152,6 +152,7 @@ export const PhaseView = ({ family, updateFamily }: ViewProps) => {
         display: "flex",
         flexDirection: "column",
         height: "100%",
+        minHeight: 0,
       }}
     >
       <Box
