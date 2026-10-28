@@ -3,6 +3,11 @@ import {
   Autocomplete,
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   IconButton,
   InputAdornment,
   MenuItem,
@@ -24,6 +29,7 @@ import {
   ReactionConfiguration,
   reactionConfigurations,
   ReactionSpeciesCount,
+  Species,
   supportedReactionTypes,
 } from "../../types/chemistryModels";
 import AddIcon from "@mui/icons-material/Add";
@@ -193,7 +199,8 @@ const SpeciesRows = ({
 type SingleSpeciesSelectProps = {
   label: string;
   speciesId?: UUID;
-  family: Family;
+  species: Array<Species>;
+  allSpecies?: Array<Species>;
   onChange: (speciesId?: UUID) => void;
 };
 
@@ -205,28 +212,42 @@ type SingleSpeciesSelectProps = {
 const SingleSpeciesSelect = ({
   label,
   speciesId,
-  family,
+  species,
+  allSpecies,
   onChange,
-}: SingleSpeciesSelectProps) => (
-  <Autocomplete
-    size="small"
-    fullWidth
-    value={family.species.find((species) => species.id === speciesId) ?? null}
-    options={[...family.species].sort(bySpeciesName)}
-    getOptionLabel={(option) => option.name || "<No Name>"}
-    isOptionEqualToValue={(option, value) => option.id === value.id}
-    noOptionsText="No species found"
-    renderInput={(params) => (
-      <TextField {...params} label={label} placeholder="Search species" />
-    )}
-    onChange={(_, selected) => onChange(selected?.id)}
-  />
-);
+}: SingleSpeciesSelectProps) => {
+  const current = speciesId
+    ? (species.find((s) => s.id === speciesId) ??
+      allSpecies?.find((s) => s.id === speciesId) ??
+      null)
+    : null;
+  const options =
+    current && !species.some((s) => s.id === current.id)
+      ? [current, ...species].sort(bySpeciesName)
+      : [...species].sort(bySpeciesName);
+
+  return (
+    <Autocomplete
+      size="small"
+      fullWidth
+      value={current}
+      options={options}
+      getOptionLabel={(option) => option.name || "<No Name>"}
+      isOptionEqualToValue={(option, value) => option.id === value.id}
+      noOptionsText="No species found"
+      renderInput={(params) => (
+        <TextField {...params} label={label} placeholder="Search species" />
+      )}
+      onChange={(_, selected) => onChange(selected?.id)}
+    />
+  );
+};
 
 type ReactionEditorModalProps = {
   open: boolean;
   onClose: () => void;
   onUpdate: (reaction: Reaction) => void;
+  onAddSpeciesToPhase?: (phaseId: UUID, speciesIds: Array<UUID>) => void;
   reaction?: Reaction;
   family: Family;
 };
@@ -235,6 +256,7 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
   open,
   onClose,
   onUpdate,
+  onAddSpeciesToPhase,
   reaction,
   family,
 }) => {
@@ -261,6 +283,20 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
 
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [showAlert, setShowAlert] = useState<boolean>(false);
+  const [pendingGasPhaseAddition, setPendingGasPhaseAddition] = useState<{
+    phaseId: UUID;
+    speciesId: UUID;
+    onConfirm: () => void;
+    onCancel?: () => void;
+    onSwitchAnyways?: () => void;
+  } | null>(null);
+
+  const selectedGasPhase = family.phases.find(
+    (phase) => phase.id === modifiedReaction?.gasPhaseId,
+  );
+  const gasPhaseSpeciesList = selectedGasPhase
+    ? family.species.filter((s) => selectedGasPhase.speciesIds.includes(s.id))
+    : family.species;
 
   const changeReactionProperties = (properties: Partial<Reaction>) => {
     setModifiedReaction({
@@ -295,6 +331,7 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
     setModifiedReaction(reaction);
     setEquationDraft(null);
     setEquationErrors([]);
+    setPendingGasPhaseAddition(null);
     const attributes = getReactionAttributes(reaction?.type);
     setDefaultAttributes(attributes);
     const configuration = getReactionConfiguration(reaction?.type);
@@ -311,10 +348,29 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
         break;
       case ReactionSpeciesCount.ONE:
         updatedReactionProperties.reactants =
-          modifiedReaction?.reactants.slice(0, 1) ?? [];
+          modifiedReaction?.reactants && modifiedReaction.reactants.length > 0
+            ? modifiedReaction.reactants.slice(0, 1)
+            : modifiedReaction?.gasPhaseSpeciesId
+              ? [
+                  {
+                    speciesId: modifiedReaction.gasPhaseSpeciesId,
+                    coefficient: 1,
+                  },
+                ]
+              : [];
         break;
       case ReactionSpeciesCount.MANY:
-        updatedReactionProperties.reactants = modifiedReaction?.reactants ?? [];
+        updatedReactionProperties.reactants =
+          modifiedReaction?.reactants && modifiedReaction.reactants.length > 0
+            ? modifiedReaction.reactants
+            : modifiedReaction?.gasPhaseSpeciesId
+              ? [
+                  {
+                    speciesId: modifiedReaction.gasPhaseSpeciesId,
+                    coefficient: 1,
+                  },
+                ]
+              : [];
         break;
     }
 
@@ -340,7 +396,8 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
       : undefined;
     updatedReactionProperties.gasPhaseSpeciesId =
       currentConfiguration.hasGasPhaseSpecies
-        ? modifiedReaction?.gasPhaseSpeciesId
+        ? (modifiedReaction?.gasPhaseSpeciesId ??
+          modifiedReaction?.reactants[0]?.speciesId)
         : undefined;
 
     changeReactionProperties(updatedReactionProperties);
@@ -413,7 +470,18 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
         errors.push(`This reaction type has only one ${side}`);
       }
     };
-    checkCount(currentConfiguration.reactantCount, newReactants, "reactant");
+    if (currentConfiguration.hasGasPhaseSpecies) {
+      if (newReactants.length > 1) {
+        errors.push("This reaction type requires only one reactant");
+      } else if (
+        newReactants.length === 1 &&
+        newReactants[0].coefficient !== 1
+      ) {
+        errors.push("The gas-phase reactant must have a coefficient of 1");
+      }
+    } else {
+      checkCount(currentConfiguration.reactantCount, newReactants, "reactant");
+    }
     checkCount(currentConfiguration.productCount, newProducts, "product");
 
     return { reactants: newReactants, products: newProducts, errors };
@@ -430,10 +498,48 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
     if (result.errors.length > 0) {
       return;
     }
-    changeReactionProperties({
-      reactants: result.reactants,
-      products: result.products,
-    });
+    if (currentConfiguration.hasGasPhaseSpecies) {
+      const newGasSpeciesId = result.reactants[0]?.speciesId;
+      if (
+        selectedGasPhase &&
+        newGasSpeciesId &&
+        !selectedGasPhase.speciesIds.includes(newGasSpeciesId)
+      ) {
+        setPendingGasPhaseAddition({
+          phaseId: selectedGasPhase.id,
+          speciesId: newGasSpeciesId,
+          onConfirm: () => {
+            changeReactionProperties({
+              gasPhaseSpeciesId: newGasSpeciesId,
+              reactants: [],
+              products: result.products,
+            });
+            setEquationDraft(null);
+            setEquationErrors([]);
+            setSpeciesVersion((version) => version + 1);
+          },
+          onCancel: () => {
+            const speciesName =
+              family.species.find((s) => s.id === newGasSpeciesId)?.name ??
+              "<No Name>";
+            setEquationErrors([
+              `"${speciesName}" is not in the selected gas phase (${selectedGasPhase.name || "<No Name>"})`,
+            ]);
+          },
+        });
+        return;
+      }
+      changeReactionProperties({
+        gasPhaseSpeciesId: newGasSpeciesId,
+        reactants: [],
+        products: result.products,
+      });
+    } else {
+      changeReactionProperties({
+        reactants: result.reactants,
+        products: result.products,
+      });
+    }
     setEquationDraft(null);
     setSpeciesVersion((version) => version + 1);
   };
@@ -455,11 +561,63 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
         setShowAlert(true);
         return;
       }
+      if (
+        currentConfiguration.hasGasPhaseSpecies &&
+        selectedGasPhase &&
+        result.reactants[0]?.speciesId &&
+        !selectedGasPhase.speciesIds.includes(result.reactants[0].speciesId)
+      ) {
+        const newGasSpeciesId = result.reactants[0].speciesId;
+        setPendingGasPhaseAddition({
+          phaseId: selectedGasPhase.id,
+          speciesId: newGasSpeciesId,
+          onConfirm: () => {
+            changeReactionProperties({
+              gasPhaseSpeciesId: newGasSpeciesId,
+              reactants: [],
+              products: result.products,
+            });
+            setEquationDraft(null);
+            setEquationErrors([]);
+            setSpeciesVersion((version) => version + 1);
+          },
+          onCancel: () => {
+            const speciesName =
+              family.species.find((s) => s.id === newGasSpeciesId)?.name ??
+              "<No Name>";
+            setEquationErrors([
+              `"${speciesName}" is not in the selected gas phase (${selectedGasPhase.name || "<No Name>"})`,
+            ]);
+          },
+        });
+        return;
+      }
       reactionToSave = {
         ...modifiedReaction,
-        reactants: result.reactants,
-        products: result.products,
+        ...(currentConfiguration.hasGasPhaseSpecies
+          ? {
+              gasPhaseSpeciesId: result.reactants[0]?.speciesId,
+              reactants: [],
+              products: result.products,
+            }
+          : {
+              reactants: result.reactants,
+              products: result.products,
+            }),
       };
+    }
+
+    if (
+      currentConfiguration.hasGasPhaseSpecies &&
+      selectedGasPhase &&
+      reactionToSave.gasPhaseSpeciesId &&
+      !selectedGasPhase.speciesIds.includes(reactionToSave.gasPhaseSpeciesId)
+    ) {
+      setErrorMessage(
+        `The gas-phase reactant must belong to the selected gas phase (${selectedGasPhase.name || "<No Name>"})`,
+      );
+      setShowAlert(true);
+      return;
     }
 
     // Save the branch that the lists show, so that the export keeps each
@@ -511,7 +669,8 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
   const products = modifiedReaction?.products ?? [];
   const hasSpecies =
     currentConfiguration.reactantCount !== ReactionSpeciesCount.NONE ||
-    currentConfiguration.productCount !== ReactionSpeciesCount.NONE;
+    currentConfiguration.productCount !== ReactionSpeciesCount.NONE ||
+    currentConfiguration.hasGasPhaseSpecies;
 
   // The lists of species under the equation field: the reactants, and the
   // products of each branch, or all products.
@@ -570,15 +729,22 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
       onChange: (entries) => changeReactionProperties({ products: entries }),
     });
   }
+  const equationReactants =
+    reactants.length > 0
+      ? reactants
+      : currentConfiguration.hasGasPhaseSpecies &&
+          modifiedReaction?.gasPhaseSpeciesId
+        ? [{ speciesId: modifiedReaction.gasPhaseSpeciesId, coefficient: 1 }]
+        : [];
   const formattedEquation =
     productBranches.length > 0
       ? formatBranchedEquation(
-          reactants,
+          equationReactants,
           products,
           family.species,
           productBranches,
         )
-      : formatEquation(reactants, products, family.species);
+      : formatEquation(equationReactants, products, family.species);
 
   // Gives the field of one reaction parameter. A parameter with a
   // concentration unit shows its value in the display units of the user. The
@@ -827,13 +993,49 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
                   select
                   size="small"
                   label="Gas Phase"
+                  id="reaction-gas-phase-select"
+                  data-testid="reaction-gas-phase-select"
                   sx={{ flex: "1 1 14em" }}
                   value={modifiedReaction?.gasPhaseId ?? "None"}
                   onChange={(event) => {
                     const phaseId = event.target.value;
+                    if (phaseId === "None") {
+                      changeReactionProperties({ gasPhaseId: undefined });
+                      return;
+                    }
+                    const targetPhase = family.phases.find(
+                      (p) => p.id === phaseId,
+                    );
+                    if (
+                      currentConfiguration.hasGasPhaseSpecies &&
+                      modifiedReaction?.gasPhaseSpeciesId &&
+                      targetPhase &&
+                      !targetPhase.speciesIds.includes(
+                        modifiedReaction.gasPhaseSpeciesId,
+                      )
+                    ) {
+                      setPendingGasPhaseAddition({
+                        phaseId: targetPhase.id,
+                        speciesId: modifiedReaction.gasPhaseSpeciesId,
+                        onConfirm: () => {
+                          changeReactionProperties({
+                            gasPhaseId: targetPhase.id,
+                          });
+                        },
+                        onSwitchAnyways: () => {
+                          changeReactionProperties({
+                            gasPhaseId: targetPhase.id,
+                            gasPhaseSpeciesId: undefined,
+                          });
+                          setEquationDraft(null);
+                          setEquationErrors([]);
+                          setSpeciesVersion((v) => v + 1);
+                        },
+                      });
+                      return;
+                    }
                     changeReactionProperties({
-                      gasPhaseId:
-                        phaseId === "None" ? undefined : (phaseId as UUID),
+                      gasPhaseId: phaseId as UUID,
                     });
                   }}
                 >
@@ -853,12 +1055,15 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
                   <SingleSpeciesSelect
                     label="Gas Phase Species"
                     speciesId={modifiedReaction?.gasPhaseSpeciesId}
-                    family={family}
-                    onChange={(speciesId) =>
+                    species={gasPhaseSpeciesList}
+                    allSpecies={family.species}
+                    onChange={(speciesId) => {
                       changeReactionProperties({
                         gasPhaseSpeciesId: speciesId,
-                      })
-                    }
+                      });
+                      setEquationDraft(null);
+                      setEquationErrors([]);
+                    }}
                   />
                 </Box>
               )}
@@ -876,7 +1081,9 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
               placeholder={
                 productBranches.length > 0
                   ? "NO + RO2 -> NO2 + RO | RONO2"
-                  : "2 NO2 + OH -> HNO3"
+                  : currentConfiguration.hasGasPhaseSpecies
+                    ? "N2O5 -> 2 HNO3"
+                    : "2 NO2 + OH -> HNO3"
               }
               value={equationDraft ?? formattedEquation}
               error={equationErrors.length > 0}
@@ -973,6 +1180,81 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
           </Box>
         </Box>
       </Modal>
+      <Dialog
+        open={pendingGasPhaseAddition !== null}
+        onClose={() => {
+          pendingGasPhaseAddition?.onCancel?.();
+          setPendingGasPhaseAddition(null);
+        }}
+        aria-labelledby="gas-phase-addition-dialog-title"
+      >
+        <DialogTitle id="gas-phase-addition-dialog-title">
+          Add species to gas phase?
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {pendingGasPhaseAddition && (
+              <>
+                The gas phase "
+                {family.phases.find(
+                  (p) => p.id === pendingGasPhaseAddition.phaseId,
+                )?.name || "<No Name>"}
+                " does not contain{" "}
+                {family.species.find(
+                  (s) => s.id === pendingGasPhaseAddition.speciesId,
+                )?.name || "<No Name>"}
+                . Add{" "}
+                {family.species.find(
+                  (s) => s.id === pendingGasPhaseAddition.speciesId,
+                )?.name || "<No Name>"}{" "}
+                to the gas phase?
+              </>
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              pendingGasPhaseAddition?.onCancel?.();
+              setPendingGasPhaseAddition(null);
+            }}
+            data-testid="cancel-gas-phase-addition"
+          >
+            Cancel
+          </Button>
+          {pendingGasPhaseAddition?.onSwitchAnyways && (
+            <Button
+              onClick={() => {
+                pendingGasPhaseAddition.onSwitchAnyways?.();
+                setPendingGasPhaseAddition(null);
+              }}
+              color="warning"
+              data-testid="switch-anyways-gas-phase"
+            >
+              Switch Anyways
+            </Button>
+          )}
+          <Button
+            onClick={() => {
+              if (pendingGasPhaseAddition) {
+                const { phaseId, speciesId, onConfirm } =
+                  pendingGasPhaseAddition;
+                onAddSpeciesToPhase?.(phaseId, [speciesId]);
+                const phase = family.phases.find((p) => p.id === phaseId);
+                if (phase && !phase.speciesIds.includes(speciesId)) {
+                  phase.speciesIds = [...phase.speciesIds, speciesId];
+                }
+                onConfirm();
+              }
+              setPendingGasPhaseAddition(null);
+            }}
+            variant="contained"
+            data-testid="confirm-gas-phase-addition"
+          >
+            Add to gas phase
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Snackbar
         open={showAlert}
         autoHideDuration={5000}
