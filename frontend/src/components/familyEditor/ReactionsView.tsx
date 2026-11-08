@@ -13,7 +13,11 @@ import { ViewProps } from "./ViewProps";
 import { useFamilyValidation } from "./FamilyValidationContext";
 import { ReactionsTable } from "./ReactionsTable";
 
-export const ReactionsView = ({ family, updateFamily }: ViewProps) => {
+export const ReactionsView = ({
+  family,
+  updateFamily,
+  readOnly,
+}: ViewProps) => {
   const { byItem } = useFamilyValidation();
   const [reactionsEditorOpen, setReactionsEditorOpen] =
     useState<boolean>(false);
@@ -126,18 +130,22 @@ export const ReactionsView = ({ family, updateFamily }: ViewProps) => {
         reactions={family.reactions}
         phases={family.phases}
         species={family.species}
-        getRowActions={(id) => [
-          <RowActionsButton
-            key={id}
-            handleDeleteButtonClick={() => {
-              removeReaction(id);
-            }}
-            handleEditButtonClick={() => editReaction(id)}
-          />,
-        ]}
-        onRowUpdate={updateReaction}
-        onAdd={createReaction}
-        onEdit={editReaction}
+        getRowActions={
+          readOnly
+            ? () => []
+            : (id) => [
+                <RowActionsButton
+                  key={id}
+                  handleDeleteButtonClick={() => {
+                    removeReaction(id);
+                  }}
+                  handleEditButtonClick={() => editReaction(id)}
+                />,
+              ]
+        }
+        onRowUpdate={readOnly ? undefined : updateReaction}
+        onAdd={readOnly ? undefined : createReaction}
+        onEdit={readOnly ? undefined : editReaction}
       />
       <ReactionEditorModal
         open={reactionsEditorOpen}

@@ -11,7 +11,7 @@ import { ViewProps } from "./ViewProps";
 import { useFamilyValidation } from "./FamilyValidationContext";
 import { SpeciesTable } from "./SpeciesTable";
 
-export const SpeciesView = ({ family, updateFamily }: ViewProps) => {
+export const SpeciesView = ({ family, updateFamily, readOnly }: ViewProps) => {
   const { byItem } = useFamilyValidation();
   const [speciesEditorOpen, setSpeciesEditorOpen] = useState<boolean>(false);
   const [selectedSpecies, setSelectedSpecies] = useState<Species>();
@@ -118,22 +118,26 @@ export const SpeciesView = ({ family, updateFamily }: ViewProps) => {
       <SpeciesTable
         issues={byItem}
         species={family.species}
-        getRowActions={(id) => [
-          <RowActionsButton
-            key={id}
-            handleDeleteButtonClick={() => {
-              removeSpecies(id);
-            }}
-            handleEditButtonClick={() => {
-              setSelectedSpecies(
-                family.species.find((element) => element.id === id),
-              );
-              setSpeciesEditorOpen(true);
-            }}
-          />,
-        ]}
-        onRowUpdate={handleSpeciesRowUpdate}
-        onAdd={createSpecies}
+        getRowActions={
+          readOnly
+            ? () => []
+            : (id) => [
+                <RowActionsButton
+                  key={id}
+                  handleDeleteButtonClick={() => {
+                    removeSpecies(id);
+                  }}
+                  handleEditButtonClick={() => {
+                    setSelectedSpecies(
+                      family.species.find((element) => element.id === id),
+                    );
+                    setSpeciesEditorOpen(true);
+                  }}
+                />,
+              ]
+        }
+        onRowUpdate={readOnly ? undefined : handleSpeciesRowUpdate}
+        onAdd={readOnly ? undefined : createSpecies}
       />
       <SpeciesEditorModal
         open={speciesEditorOpen}

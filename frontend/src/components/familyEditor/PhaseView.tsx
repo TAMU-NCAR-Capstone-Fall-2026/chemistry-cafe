@@ -11,7 +11,7 @@ import { ViewProps } from "./ViewProps";
 import { useFamilyValidation } from "./FamilyValidationContext";
 import { PhaseTable } from "./PhaseTable";
 
-export const PhaseView = ({ family, updateFamily }: ViewProps) => {
+export const PhaseView = ({ family, updateFamily, readOnly }: ViewProps) => {
   const { byItem } = useFamilyValidation();
   const [phaseCreationModalOpen, setPhaseCreationModalOpen] = useState(false);
   const [selectedPhase, setSelectedPhase] = useState<Phase>();
@@ -205,19 +205,27 @@ export const PhaseView = ({ family, updateFamily }: ViewProps) => {
         issues={byItem}
         phases={family.phases}
         species={family.species}
-        getRowActions={(id) => [
-          <RowActionsButton
-            key={id}
-            handleDeleteButtonClick={() => removePhase(id)}
-            handleEditButtonClick={() => editPhase(id)}
-          />,
-        ]}
-        onRowUpdate={handlePhaseRowUpdate}
-        onAdd={() => {
-          setSelectedPhase(undefined);
-          setPhaseCreationModalOpen(true);
-        }}
-        onEdit={editPhase}
+        getRowActions={
+          readOnly
+            ? () => []
+            : (id) => [
+                <RowActionsButton
+                  key={id}
+                  handleDeleteButtonClick={() => removePhase(id)}
+                  handleEditButtonClick={() => editPhase(id)}
+                />,
+              ]
+        }
+        onRowUpdate={readOnly ? undefined : handlePhaseRowUpdate}
+        onAdd={
+          readOnly
+            ? undefined
+            : () => {
+                setSelectedPhase(undefined);
+                setPhaseCreationModalOpen(true);
+              }
+        }
+        onEdit={readOnly ? undefined : editPhase}
       />
       <PhaseCreationModal
         open={phaseCreationModalOpen}
