@@ -42,6 +42,7 @@ import {
   rowsToShow,
   unmarkedProblems,
 } from "./IssueIndicators";
+import { OtherPropertiesModal } from "../modals/OtherPropertiesModal";
 import { ReactionTypeInfo } from "./ReactionTypeInfo";
 import { useUserPreferences } from "../UserPreferencesContext";
 import {
@@ -63,6 +64,18 @@ import {
   showsAttribute,
   withActivationValue,
 } from "../../helpers/activationEnergy";
+
+// Shows each other property as "__key = value". A nested value shows as JSON.
+const otherPropertiesSummary = (
+  properties?: Record<string, unknown> | null,
+): string =>
+  Object.entries(properties ?? {})
+    .map(([key, value]) => {
+      const text =
+        typeof value === "string" ? value || '""' : JSON.stringify(value);
+      return `__${key} = ${text ?? "null"}`;
+    })
+    .join(", ");
 
 /**
  * Gives a column width that shows the whole name and unit of a parameter
@@ -439,6 +452,12 @@ export const ReactionsTable = ({
   // Without a way to save an edit, the cells are read-only.
   const editable = onRowUpdate !== undefined;
 
+  // The reaction whose other properties the modal edits.
+  const [otherPropertiesId, setOtherPropertiesId] = useState<UUID | null>(null);
+  const otherPropertiesReaction = reactions.find(
+    (element) => element.id === otherPropertiesId,
+  );
+
   const reactionsColumns = useMemo<Array<GridColDef<Reaction>>>(
     () => [
       {
@@ -651,7 +670,7 @@ export const ReactionsTable = ({
 
   // When all visible rows have one type, the table shows the parameters of
   // that type in their own columns. Otherwise, it shows a short summary.
-  const columns = useMemo<Array<GridColDef>>(
+  const typeColumns = useMemo<Array<GridColDef>>(
     () =>
       visibleType
         ? [
@@ -692,101 +711,145 @@ export const ReactionsTable = ({
     ],
   );
 
+  // The Other Properties column is the last column, for every reaction type.
+  const columns = useMemo<Array<GridColDef>>(
+    () => [
+      ...typeColumns,
+      {
+        field: "otherProperties",
+        headerName: "Other Properties",
+        flex: 1.5,
+        minWidth: 200,
+        sortable: false,
+        valueGetter: (_value, row: Reaction) =>
+          otherPropertiesSummary(row.otherProperties),
+        renderCell: (params: GridRenderCellParams<Reaction>) => (
+          <Typography
+            variant="body2"
+            color={params.value ? "textSecondary" : "text.disabled"}
+            noWrap
+            title={params.value || ""}
+          >
+            {params.value || "<None>"}
+          </Typography>
+        ),
+      },
+    ],
+    [typeColumns],
+  );
+
   return (
-    <DataGrid
-      apiRef={apiRef}
-      onRowSelectionModelChange={(model) =>
-        setSelectedRowId((model[0] as UUID | undefined) ?? null)
-      }
-      // The search and the Type menu replace the filter panel. The free
-      // DataGrid allows only one filter condition at a time.
-      disableColumnFilter
-      // A parameter column has a second line for its unit.
-      columnHeaderHeight={visibleType ? 72 : 56}
-      initialState={{
-        density: "compact",
-        filter: {
-          filterModel: {
-            items: [],
-            quickFilterExcludeHiddenColumns: false,
-          },
-        },
-        pagination: { paginationModel: { pageSize: 20 } },
-      }}
-      columnVisibilityModel={columnVisibility}
-      onColumnVisibilityModelChange={setColumnVisibility}
-      rows={rows}
-      columns={columns}
-      // A double-click opens the reaction editor. An editable cell, for
-      // example the name or a parameter, keeps its in-cell edit.
-      onCellDoubleClick={(params) => {
-        if (params.isEditable || params.colDef.type === "actions") {
-          return;
+    <>
+      <DataGrid
+        apiRef={apiRef}
+        onRowSelectionModelChange={(model) =>
+          setSelectedRowId((model[0] as UUID | undefined) ?? null)
         }
-        onEdit?.(params.id as UUID);
-      }}
-      processRowUpdate={(updatedRow: Reaction) => {
-        onRowUpdate?.(updatedRow);
-        return updatedRow;
-      }}
-      pageSizeOptions={[5, 10, 20, 100]}
-      disableVirtualization
-      sx={{
-        flex: 1,
-        "& .MuiDataGrid-cell": {
-          display: "flex",
-          alignItems: "center",
-        },
-        ".MuiDataGrid-columnHeaderTitle": {
-          fontFamily: theme.typography.fontFamily,
-        },
-        ".MuiDataGrid-overlay": {
-          fontFamily: theme.typography.fontFamily,
-        },
-      }}
-      slots={{ toolbar: DataViewToolbar }}
-      slotProps={{
-        toolbar: {
-          addLabel: "Add Reaction",
-          addTooltip: "Add reaction to family",
-          addTestId: "add-reaction-button",
-          onAdd,
-          searchPlaceholder: "Search reactions",
-          filters: (
-            <>
-              <TypeFilter
-                options={typeOptions}
-                selectedTypes={activeTypes}
-                onSelect={setTypeFilter}
-              />
-              <ProblemsFilter
-                count={problemCount}
-                selected={onlyProblems}
-                onChange={setOnlyProblems}
-              />
-            </>
-          ),
-          actions: visibleType && (
-            <RateConstantButton
-              info={
-                <ReactionTypeInfo
-                  type={visibleType}
-                  rateUnits={rateUnitsFor(preferences.rateUnits, visibleType)}
-                  activationParameter={activationParameter}
-                  reaction={reactions.find(
-                    (reaction) =>
-                      reaction.id === selectedRowId &&
-                      reaction.type === visibleType,
-                  )}
-                  species={species}
+        // The search and the Type menu replace the filter panel. The free
+        // DataGrid allows only one filter condition at a time.
+        disableColumnFilter
+        // A parameter column has a second line for its unit.
+        columnHeaderHeight={visibleType ? 72 : 56}
+        initialState={{
+          density: "compact",
+          filter: {
+            filterModel: {
+              items: [],
+              quickFilterExcludeHiddenColumns: false,
+            },
+          },
+          pagination: { paginationModel: { pageSize: 20 } },
+        }}
+        columnVisibilityModel={columnVisibility}
+        onColumnVisibilityModelChange={setColumnVisibility}
+        rows={rows}
+        columns={columns}
+        // A double-click opens the reaction editor. An editable cell, for
+        // example the name or a parameter, keeps its in-cell edit.
+        onCellDoubleClick={(params) => {
+          // The other properties have their own modal.
+          if (editable && params.field === "otherProperties") {
+            setOtherPropertiesId(params.id as UUID);
+            return;
+          }
+          if (params.isEditable || params.colDef.type === "actions") {
+            return;
+          }
+          onEdit?.(params.id as UUID);
+        }}
+        processRowUpdate={(updatedRow: Reaction) => {
+          onRowUpdate?.(updatedRow);
+          return updatedRow;
+        }}
+        pageSizeOptions={[5, 10, 20, 100]}
+        disableVirtualization
+        sx={{
+          flex: 1,
+          "& .MuiDataGrid-cell": {
+            display: "flex",
+            alignItems: "center",
+          },
+          ".MuiDataGrid-columnHeaderTitle": {
+            fontFamily: theme.typography.fontFamily,
+          },
+          ".MuiDataGrid-overlay": {
+            fontFamily: theme.typography.fontFamily,
+          },
+        }}
+        slots={{ toolbar: DataViewToolbar }}
+        slotProps={{
+          toolbar: {
+            addLabel: "Add Reaction",
+            addTooltip: "Add reaction to family",
+            addTestId: "add-reaction-button",
+            onAdd,
+            searchPlaceholder: "Search reactions",
+            filters: (
+              <>
+                <TypeFilter
+                  options={typeOptions}
+                  selectedTypes={activeTypes}
+                  onSelect={setTypeFilter}
                 />
-              }
-            />
-          ),
-          visibleCount: visibleRows.length,
-          totalCount: reactions.length,
-        },
-      }}
-    />
+                <ProblemsFilter
+                  count={problemCount}
+                  selected={onlyProblems}
+                  onChange={setOnlyProblems}
+                />
+              </>
+            ),
+            actions: visibleType && (
+              <RateConstantButton
+                info={
+                  <ReactionTypeInfo
+                    type={visibleType}
+                    rateUnits={rateUnitsFor(preferences.rateUnits, visibleType)}
+                    activationParameter={activationParameter}
+                    reaction={reactions.find(
+                      (reaction) =>
+                        reaction.id === selectedRowId &&
+                        reaction.type === visibleType,
+                    )}
+                    species={species}
+                  />
+                }
+              />
+            ),
+            visibleCount: visibleRows.length,
+            totalCount: reactions.length,
+          },
+        }}
+      />
+      <OtherPropertiesModal
+        open={otherPropertiesReaction !== undefined}
+        properties={otherPropertiesReaction?.otherProperties}
+        onClose={() => setOtherPropertiesId(null)}
+        onSubmit={(otherProperties) => {
+          if (otherPropertiesReaction) {
+            onRowUpdate?.({ ...otherPropertiesReaction, otherProperties });
+          }
+        }}
+      />
+    </>
   );
 };

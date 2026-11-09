@@ -22,6 +22,19 @@ import {
   ProblemText,
   rowsToShow,
 } from "./IssueIndicators";
+import { OtherPropertiesModal } from "../modals/OtherPropertiesModal";
+
+// Shows each other property as "__key = value". A nested value shows as JSON.
+const otherPropertiesSummary = (
+  properties?: Record<string, unknown> | null,
+): string =>
+  Object.entries(properties ?? {})
+    .map(([key, value]) => {
+      const text =
+        typeof value === "string" ? value || '""' : JSON.stringify(value);
+      return `__${key} = ${text ?? "null"}`;
+    })
+    .join(", ");
 
 const EXCLUSIVE_OPTION_MESSAGE =
   "Only one of constant concentration, constant mixing ratio, or third body may be set.";
@@ -91,6 +104,11 @@ export const SpeciesTable = ({
   // Shows only the species with problems.
   const [onlyProblems, setOnlyProblems] = useState<boolean>(false);
   const problemCount = countRowsWithIssues(species, issues);
+  // The species whose other properties the modal edits.
+  const [otherPropertiesId, setOtherPropertiesId] = useState<UUID | null>(null);
+  const otherPropertiesSpecies = species.find(
+    (element) => element.id === otherPropertiesId,
+  );
 
   const speciesColumns: GridColDef[] = [
     {
@@ -241,66 +259,104 @@ export const SpeciesTable = ({
       preProcessEditCellProps: exclusiveOptionPreProcess("isThirdBody"),
       renderEditCell: (params) => <ExclusiveBooleanEditCell {...params} />,
     },
+    {
+      field: "otherProperties",
+      headerName: "Other Properties",
+      flex: 1.5,
+      minWidth: 200,
+      sortable: false,
+      valueGetter: (_value, row: Species) =>
+        otherPropertiesSummary(row.otherProperties),
+      renderCell: (params: GridRenderCellParams<Species>) => (
+        <Typography
+          variant="body2"
+          color={params.value ? "textSecondary" : "text.disabled"}
+          noWrap
+          title={params.value || ""}
+        >
+          {params.value || "<None>"}
+        </Typography>
+      ),
+    },
   ];
 
   return (
-    <DataGrid
-      apiRef={apiRef}
-      // The search replaces the filter panel. The free DataGrid allows only
-      // one filter condition at a time.
-      disableColumnFilter
-      getRowId={(row) => row.id}
-      editMode="cell"
-      processRowUpdate={(updatedRow: Species) => {
-        onRowUpdate?.(updatedRow);
-        return updatedRow;
-      }}
-      initialState={{
-        density: "compact",
-        pagination: { paginationModel: { pageSize: 20 } },
-        sorting: { sortModel: [{ field: "name", sort: "asc" }] },
-      }}
-      rows={rowsToShow(species, issues, onlyProblems && problemCount > 0)}
-      columns={speciesColumns}
-      pageSizeOptions={[5, 10, 20, 100]}
-      disableRowSelectionOnClick
-      disableVirtualization // Enables DataGrid to be rendered in testing
-      sx={{
-        flex: 1,
-        "& .MuiDataGrid-cell": {
-          display: "flex",
-          alignItems: "center",
-        },
-        ".MuiDataGrid-columnHeaderTitle": {
-          fontFamily: theme.typography.fontFamily,
-        },
-        ".MuiDataGrid-overlay": {
-          fontFamily: theme.typography.fontFamily,
-        },
-      }}
-      slots={{ toolbar: DataViewToolbar }}
-      slotProps={{
-        toolbar: {
-          addLabel: "Add Species",
-          addBulkLabel: "Import Species",
-          addTooltip: "Add species to family",
-          addBulkTooltip: "Import species into a family",
-          addTestId: "add-species-button",
-          addBulkTestId:"add-bulk-species-button",
-          onAdd,
-          onBulkAdd,
-          searchPlaceholder: "Search species",
-          filters: (
-            <ProblemsFilter
-              count={problemCount}
-              selected={onlyProblems}
-              onChange={setOnlyProblems}
-            />
-          ),
-          visibleCount: visibleRows.length,
-          totalCount: species.length,
-        },
-      }}
-    />
+    <>
+      <DataGrid
+        apiRef={apiRef}
+        // The search replaces the filter panel. The free DataGrid allows only
+        // one filter condition at a time.
+        disableColumnFilter
+        getRowId={(row) => row.id}
+        editMode="cell"
+        // A double-click on the other properties opens the modal to edit them.
+        // The other cells use the in-cell edit.
+        onCellDoubleClick={(params) => {
+          if (editable && params.field === "otherProperties") {
+            setOtherPropertiesId(params.id as UUID);
+          }
+        }}
+        processRowUpdate={(updatedRow: Species) => {
+          onRowUpdate?.(updatedRow);
+          return updatedRow;
+        }}
+        initialState={{
+          density: "compact",
+          pagination: { paginationModel: { pageSize: 20 } },
+          sorting: { sortModel: [{ field: "name", sort: "asc" }] },
+        }}
+        rows={rowsToShow(species, issues, onlyProblems && problemCount > 0)}
+        columns={speciesColumns}
+        pageSizeOptions={[5, 10, 20, 100]}
+        disableRowSelectionOnClick
+        disableVirtualization // Enables DataGrid to be rendered in testing
+        sx={{
+          flex: 1,
+          "& .MuiDataGrid-cell": {
+            display: "flex",
+            alignItems: "center",
+          },
+          ".MuiDataGrid-columnHeaderTitle": {
+            fontFamily: theme.typography.fontFamily,
+          },
+          ".MuiDataGrid-overlay": {
+            fontFamily: theme.typography.fontFamily,
+          },
+        }}
+        slots={{ toolbar: DataViewToolbar }}
+        slotProps={{
+          toolbar: {
+            addLabel: "Add Species",
+            addBulkLabel: "Import Species",
+            addTooltip: "Add species to family",
+            addBulkTooltip: "Import species into a family",
+            addTestId: "add-species-button",
+            addBulkTestId: "add-bulk-species-button",
+            onAdd,
+            onBulkAdd,
+            searchPlaceholder: "Search species",
+            filters: (
+              <ProblemsFilter
+                count={problemCount}
+                selected={onlyProblems}
+                onChange={setOnlyProblems}
+              />
+            ),
+            visibleCount: visibleRows.length,
+            totalCount: species.length,
+          },
+        }}
+      />
+      <OtherPropertiesModal
+        open={otherPropertiesSpecies !== undefined}
+        properties={otherPropertiesSpecies?.otherProperties}
+        onClose={() => setOtherPropertiesId(null)}
+        onSubmit={(otherProperties) => {
+          if (otherPropertiesSpecies) {
+            onRowUpdate?.({ ...otherPropertiesSpecies, otherProperties });
+          }
+        }}
+      />
+    </>
   );
 };

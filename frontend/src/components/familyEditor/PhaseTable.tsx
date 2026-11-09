@@ -19,6 +19,19 @@ import {
   rowsToShow,
   unmarkedProblems,
 } from "./IssueIndicators";
+import { OtherPropertiesModal } from "../modals/OtherPropertiesModal";
+
+// Shows each other property as "__key = value". A nested value shows as JSON.
+const otherPropertiesSummary = (
+  properties?: Record<string, unknown> | null,
+): string =>
+  Object.entries(properties ?? {})
+    .map(([key, value]) => {
+      const text =
+        typeof value === "string" ? value || '""' : JSON.stringify(value);
+      return `__${key} = ${text ?? "null"}`;
+    })
+    .join(", ");
 
 export type PhaseTableProps = {
   /** The phases that the table shows. */
@@ -64,6 +77,11 @@ export const PhaseTable = ({
   // Shows only the phases with problems.
   const [onlyProblems, setOnlyProblems] = useState<boolean>(false);
   const problemCount = countRowsWithIssues(phases, issues);
+  // The phase whose other properties the modal edits.
+  const [otherPropertiesId, setOtherPropertiesId] = useState<UUID | null>(null);
+  const otherPropertiesPhase = phases.find(
+    (element) => element.id === otherPropertiesId,
+  );
 
   const phaseColumns: GridColDef[] = [
     {
@@ -150,64 +168,103 @@ export const PhaseTable = ({
         );
       },
     },
+    {
+      field: "otherProperties",
+      headerName: "Other Properties",
+      flex: 1.5,
+      minWidth: 200,
+      sortable: false,
+      valueGetter: (_value, row: Phase) =>
+        otherPropertiesSummary(row.otherProperties),
+      renderCell: (params: GridRenderCellParams<Phase>) => (
+        <Typography
+          variant="body2"
+          color={params.value ? "textSecondary" : "text.disabled"}
+          noWrap
+          title={params.value || ""}
+        >
+          {params.value || "<None>"}
+        </Typography>
+      ),
+    },
   ];
 
   return (
-    <DataGrid
-      apiRef={apiRef}
-      // The search replaces the filter panel. The free DataGrid allows only
-      // one filter condition at a time.
-      disableColumnFilter
-      getRowId={(row: Phase) => row.id}
-      initialState={{
-        density: "compact",
-        pagination: { paginationModel: { pageSize: 20 } },
-      }}
-      rows={rowsToShow(phases, issues, onlyProblems && problemCount > 0)}
-      columns={phaseColumns}
-      processRowUpdate={onRowUpdate}
-      // A double-click on the species opens the phase editor. The name and
-      // the description use the in-cell edit.
-      onCellDoubleClick={(params) => {
-        if (params.field !== "speciesIds") {
-          return;
-        }
-        onEdit?.(params.id as UUID);
-      }}
-      pageSizeOptions={[5, 10, 20, 100]}
-      disableVirtualization
-      sx={{
-        flex: 1,
-        "& .MuiDataGrid-cell": {
-          display: "flex",
-          alignItems: "center",
-        },
-        ".MuiDataGrid-columnHeaderTitle": {
-          fontFamily: theme.typography.fontFamily,
-        },
-        ".MuiDataGrid-overlay": {
-          fontFamily: theme.typography.fontFamily,
-        },
-      }}
-      slots={{ toolbar: DataViewToolbar }}
-      slotProps={{
-        toolbar: {
-          addLabel: "Add Phase",
-          addTooltip: "Add phase to family",
-          addTestId: "add-phase-button",
-          onAdd,
-          searchPlaceholder: "Search phases",
-          filters: (
-            <ProblemsFilter
-              count={problemCount}
-              selected={onlyProblems}
-              onChange={setOnlyProblems}
-            />
-          ),
-          visibleCount: visibleRows.length,
-          totalCount: phases.length,
-        },
-      }}
-    />
+    <>
+      <DataGrid
+        apiRef={apiRef}
+        // The search replaces the filter panel. The free DataGrid allows only
+        // one filter condition at a time.
+        disableColumnFilter
+        getRowId={(row: Phase) => row.id}
+        initialState={{
+          density: "compact",
+          pagination: { paginationModel: { pageSize: 20 } },
+        }}
+        rows={rowsToShow(phases, issues, onlyProblems && problemCount > 0)}
+        columns={phaseColumns}
+        processRowUpdate={onRowUpdate}
+        // A double-click on the species opens the phase editor, and one on the
+        // other properties opens the modal to edit them. The name and the
+        // description use the in-cell edit.
+        onCellDoubleClick={(params) => {
+          if (editable && params.field === "otherProperties") {
+            setOtherPropertiesId(params.id as UUID);
+            return;
+          }
+          if (params.field !== "speciesIds") {
+            return;
+          }
+          onEdit?.(params.id as UUID);
+        }}
+        pageSizeOptions={[5, 10, 20, 100]}
+        disableVirtualization
+        sx={{
+          flex: 1,
+          "& .MuiDataGrid-cell": {
+            display: "flex",
+            alignItems: "center",
+          },
+          ".MuiDataGrid-columnHeaderTitle": {
+            fontFamily: theme.typography.fontFamily,
+          },
+          ".MuiDataGrid-overlay": {
+            fontFamily: theme.typography.fontFamily,
+          },
+        }}
+        slots={{ toolbar: DataViewToolbar }}
+        slotProps={{
+          toolbar: {
+            addLabel: "Add Phase",
+            addTooltip: "Add phase to family",
+            addTestId: "add-phase-button",
+            onAdd,
+            searchPlaceholder: "Search phases",
+            filters: (
+              <ProblemsFilter
+                count={problemCount}
+                selected={onlyProblems}
+                onChange={setOnlyProblems}
+              />
+            ),
+            visibleCount: visibleRows.length,
+            totalCount: phases.length,
+          },
+        }}
+      />
+      <OtherPropertiesModal
+        open={otherPropertiesPhase !== undefined}
+        properties={otherPropertiesPhase?.otherProperties}
+        onClose={() => setOtherPropertiesId(null)}
+        onSubmit={(otherProperties) => {
+          if (otherPropertiesPhase) {
+            onRowUpdate?.(
+              { ...otherPropertiesPhase, otherProperties },
+              otherPropertiesPhase,
+            );
+          }
+        }}
+      />
+    </>
   );
 };

@@ -28,13 +28,16 @@ export const PhaseView = ({ family, updateFamily, readOnly }: ViewProps) => {
     description: string | null,
     speciesIds: UUID[],
     diffusionCoefficients: Record<UUID, number>,
+    otherProperties?: Phase["otherProperties"],
   ) => {
     const phase: Phase = {
+      ...selectedPhase,
       id: selectedPhase?.id ?? generateID(),
       name,
       description,
       speciesIds,
       diffusionCoefficients,
+      otherProperties,
     };
 
     const removedSpeciesIds = new Set(
