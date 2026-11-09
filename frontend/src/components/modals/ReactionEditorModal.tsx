@@ -38,6 +38,7 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { bySpeciesName, SelectSpeciesButton } from "../SelectSpeciesButton";
 import { reactionTypeToString } from "../../helpers/stringify";
 import { modalStyle } from "./modalStyle";
+import { OtherPropertiesField } from "./OtherPropertiesField";
 import { UUID } from "crypto";
 import { useUserPreferences } from "../UserPreferencesContext";
 import {
@@ -1182,6 +1183,13 @@ export const ReactionEditorModal: React.FC<ReactionEditorModalProps> = ({
             modifiedReaction.type in reactionTypeDocs && (
               <RateConstantFormula type={modifiedReaction.type} />
             )}
+          <OtherPropertiesField
+            noun="reaction"
+            properties={modifiedReaction?.otherProperties}
+            onChange={(otherProperties) =>
+              changeReactionProperties({ otherProperties })
+            }
+          />
           <Box
             sx={{
               display: "flex",

@@ -15,6 +15,7 @@ import React, { useLayoutEffect, useState } from "react";
 import { Species } from "../../types/chemistryModels";
 import UnitComponent from "../UnitComponent";
 import { modalStyle } from "./modalStyle";
+import { OtherPropertiesField } from "./OtherPropertiesField";
 
 type SpeciesEditorModalProps = {
   open: boolean;
@@ -192,6 +193,13 @@ export const SpeciesEditorModal: React.FC<SpeciesEditorModalProps> = ({
                   />
                 }
                 label="Third body (M)"
+              />
+              <OtherPropertiesField
+                noun="species"
+                properties={(modifiedSpecies ?? species).otherProperties}
+                onChange={(otherProperties) =>
+                  changeSpeciesProperties({ otherProperties })
+                }
               />
               <Box
                 sx={{

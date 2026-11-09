@@ -11,6 +11,7 @@ import {
 import { UUID } from "crypto";
 import { Phase, Species } from "../../types/chemistryModels";
 import { modalStyle } from "./modalStyle";
+import { OtherPropertiesField } from "./OtherPropertiesField";
 
 type PhaseCreationModalProps = {
   open: boolean;
@@ -20,6 +21,7 @@ type PhaseCreationModalProps = {
     description: string | null,
     speciesIds: UUID[],
     diffusionCoefficients: Record<UUID, number>,
+    otherProperties?: Phase["otherProperties"],
   ) => void;
   phase?: Phase;
   species: Species[];
@@ -45,6 +47,8 @@ export const PhaseCreationModal = ({
   const [invalidCoefficientIds, setInvalidCoefficientIds] = useState<UUID[]>(
     [],
   );
+  const [otherProperties, setOtherProperties] =
+    useState<Phase["otherProperties"]>();
 
   const filteredSpecies = species.filter((option) =>
     option.name.toLowerCase().includes(speciesSearch.trim().toLowerCase()),
@@ -66,6 +70,7 @@ export const PhaseCreationModal = ({
         ),
       );
       setInvalidCoefficientIds([]);
+      setOtherProperties(phase?.otherProperties);
       setSpeciesSearch("");
       setNameError(false);
     }
@@ -105,6 +110,7 @@ export const PhaseCreationModal = ({
       description.trim() || null,
       selectedSpeciesIds,
       coefficients,
+      otherProperties,
     );
   };
 
@@ -289,6 +295,11 @@ export const PhaseCreationModal = ({
             </Box>
           </>
         )}
+        <OtherPropertiesField
+          noun="phase"
+          properties={otherProperties}
+          onChange={setOtherProperties}
+        />
         <Box
           sx={{
             display: "flex",

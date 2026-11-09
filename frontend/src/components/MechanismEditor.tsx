@@ -18,6 +18,7 @@ import { SpeciesTable } from "./familyEditor/SpeciesTable";
 import { ReactionsTable } from "./familyEditor/ReactionsTable";
 import { PhaseTable } from "./familyEditor/PhaseTable";
 import { MechanismSearchModal } from "./modals/MechanismEditorSearchModal";
+import { OtherPropertiesField } from "./modals/OtherPropertiesField";
 import { reactionToString } from "../helpers/stringify";
 import { useFamilyValidation } from "./familyEditor/FamilyValidationContext";
 import { ProblemCount } from "./familyEditor/IssueIndicators";
@@ -287,6 +288,13 @@ export const MechanismEditor: React.FC<MechanismEditorProps> = ({
                   description: event.target.value,
                 });
               }}
+            />
+            <OtherPropertiesField
+              noun="mechanism"
+              properties={modifiedMechanism.otherProperties}
+              onChange={(otherProperties) =>
+                changeMechanismProperties({ otherProperties })
+              }
             />
           </Box>
         </Box>
