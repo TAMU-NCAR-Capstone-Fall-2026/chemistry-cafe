@@ -1,5 +1,6 @@
 import { Fragment, ReactElement, useState } from "react";
-import { Typography } from "@mui/material";
+import { Box, IconButton, Tooltip, Typography } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
 import {
   DataGrid,
   GridColDef,
@@ -20,18 +21,7 @@ import {
   unmarkedProblems,
 } from "./IssueIndicators";
 import { OtherPropertiesModal } from "../modals/OtherPropertiesModal";
-
-// Shows each other property as "__key = value". A nested value shows as JSON.
-const otherPropertiesSummary = (
-  properties?: Record<string, unknown> | null,
-): string =>
-  Object.entries(properties ?? {})
-    .map(([key, value]) => {
-      const text =
-        typeof value === "string" ? value || '""' : JSON.stringify(value);
-      return `__${key} = ${text ?? "null"}`;
-    })
-    .join(", ");
+import { otherPropertiesSummary } from "../OtherPropertiesField";
 
 export type PhaseTableProps = {
   /** The phases that the table shows. */
@@ -177,14 +167,37 @@ export const PhaseTable = ({
       valueGetter: (_value, row: Phase) =>
         otherPropertiesSummary(row.otherProperties),
       renderCell: (params: GridRenderCellParams<Phase>) => (
-        <Typography
-          variant="body2"
-          color={params.value ? "textSecondary" : "text.disabled"}
-          noWrap
-          title={params.value || ""}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            columnGap: 0.5,
+            width: "100%",
+            minWidth: 0,
+          }}
         >
-          {params.value || "<None>"}
-        </Typography>
+          <Typography
+            variant="body2"
+            color={params.value ? "textSecondary" : "text.disabled"}
+            noWrap
+            title={params.value || ""}
+            sx={{ flex: 1, minWidth: 0 }}
+          >
+            {params.value || "<None>"}
+          </Typography>
+          {editable && (
+            <Tooltip title="Edit other properties" disableInteractive>
+              <IconButton
+                size="small"
+                aria-label="Edit other properties"
+                data-testid="edit-other-properties-button"
+                onClick={() => setOtherPropertiesId(params.id as UUID)}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
       ),
     },
   ];

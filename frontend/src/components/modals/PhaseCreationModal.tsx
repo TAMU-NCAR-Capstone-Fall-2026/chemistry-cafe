@@ -11,7 +11,7 @@ import {
 import { UUID } from "crypto";
 import { Phase, Species } from "../../types/chemistryModels";
 import { modalStyle } from "./modalStyle";
-import { OtherPropertiesField } from "./OtherPropertiesField";
+import { OtherPropertiesField } from "../OtherPropertiesField";
 
 type PhaseCreationModalProps = {
   open: boolean;
