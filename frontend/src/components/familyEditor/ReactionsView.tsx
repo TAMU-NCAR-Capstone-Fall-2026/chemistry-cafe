@@ -6,6 +6,7 @@ import {
   ReactionEditorModal,
   type PhaseSpeciesAddition,
 } from "../modals/ReactionEditorModal";
+import { EntityHistoryModal } from "../modals/EntityHistoryModal";
 import { RowActionsButton } from "../RowActionsButton";
 import { UUID } from "crypto";
 import { generateID } from "../../helpers/localFamilies";
@@ -22,6 +23,7 @@ export const ReactionsView = ({
   const [reactionsEditorOpen, setReactionsEditorOpen] =
     useState<boolean>(false);
   const [selectedReaction, setSelectedReaction] = useState<Reaction>();
+  const [historyReaction, setHistoryReaction] = useState<Reaction | null>(null);
 
   const createReaction = () => {
     const frontendId: UUID = generateID();
@@ -131,15 +133,31 @@ export const ReactionsView = ({
         phases={family.phases}
         species={family.species}
         getRowActions={
-          readOnly
+          readOnly && !family.isInDatabase
             ? () => []
             : (id) => [
                 <RowActionsButton
                   key={id}
-                  handleDeleteButtonClick={() => {
-                    removeReaction(id);
-                  }}
-                  handleEditButtonClick={() => editReaction(id)}
+                  handleDeleteButtonClick={
+                    readOnly
+                      ? undefined
+                      : () => {
+                          removeReaction(id);
+                        }
+                  }
+                  handleEditButtonClick={
+                    readOnly ? undefined : () => editReaction(id)
+                  }
+                  handleHistoryButtonClick={
+                    family.isInDatabase
+                      ? () => {
+                          const rx = family.reactions.find(
+                            (element) => element.id === id,
+                          );
+                          if (rx) setHistoryReaction(rx);
+                        }
+                      : undefined
+                  }
                 />,
               ]
         }
@@ -155,6 +173,15 @@ export const ReactionsView = ({
         }}
         onUpdate={updateReaction}
         reaction={selectedReaction}
+        family={family}
+      />
+      <EntityHistoryModal
+        open={Boolean(historyReaction)}
+        onClose={() => setHistoryReaction(null)}
+        familyId={family.id}
+        targetType="Reaction"
+        targetId={historyReaction?.id ?? ""}
+        targetName={historyReaction?.name ?? ""}
         family={family}
       />
     </Box>

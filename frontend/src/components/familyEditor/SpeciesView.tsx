@@ -10,11 +10,13 @@ import { generateID } from "../../helpers/localFamilies";
 import { ViewProps } from "./ViewProps";
 import { useFamilyValidation } from "./FamilyValidationContext";
 import { SpeciesTable } from "./SpeciesTable";
+import { EntityHistoryModal } from "../modals/EntityHistoryModal";
 
 export const SpeciesView = ({ family, updateFamily, readOnly }: ViewProps) => {
   const { byItem } = useFamilyValidation();
   const [speciesEditorOpen, setSpeciesEditorOpen] = useState<boolean>(false);
   const [selectedSpecies, setSelectedSpecies] = useState<Species>();
+  const [historySpecies, setHistorySpecies] = useState<Species | null>(null);
 
   const handleSpeciesRowUpdate = (updatedSpecies: Species) => {
     updateFamily(applySpeciesRowUpdate(family, updatedSpecies));
@@ -119,20 +121,36 @@ export const SpeciesView = ({ family, updateFamily, readOnly }: ViewProps) => {
         issues={byItem}
         species={family.species}
         getRowActions={
-          readOnly
+          readOnly && !family.isInDatabase
             ? () => []
             : (id) => [
                 <RowActionsButton
                   key={id}
-                  handleDeleteButtonClick={() => {
-                    removeSpecies(id);
-                  }}
-                  handleEditButtonClick={() => {
-                    setSelectedSpecies(
-                      family.species.find((element) => element.id === id),
-                    );
-                    setSpeciesEditorOpen(true);
-                  }}
+                  handleDeleteButtonClick={
+                    readOnly
+                      ? undefined
+                      : () => {
+                          removeSpecies(id);
+                        }
+                  }
+                  handleEditButtonClick={
+                    readOnly
+                      ? undefined
+                      : () => {
+                          setSelectedSpecies(
+                            family.species.find((element) => element.id === id),
+                          );
+                          setSpeciesEditorOpen(true);
+                        }
+                  }
+                  handleHistoryButtonClick={
+                    family.isInDatabase
+                      ? () => {
+                          const sp = family.species.find((element) => element.id === id);
+                          if (sp) setHistorySpecies(sp);
+                        }
+                      : undefined
+                  }
                 />,
               ]
         }
@@ -148,6 +166,17 @@ export const SpeciesView = ({ family, updateFamily, readOnly }: ViewProps) => {
         onUpdate={updateSpecies}
         species={selectedSpecies}
       />
+      {historySpecies && (
+        <EntityHistoryModal
+          open={Boolean(historySpecies)}
+          onClose={() => setHistorySpecies(null)}
+          familyId={family.id}
+          targetType="Species"
+          targetId={historySpecies.id}
+          targetName={historySpecies.name}
+          family={family}
+        />
+      )}
     </Box>
   );
 };

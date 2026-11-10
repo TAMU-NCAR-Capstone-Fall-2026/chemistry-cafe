@@ -10,10 +10,12 @@ import { useState, MouseEvent } from "react";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import HistoryIcon from "@mui/icons-material/History";
 
 type RowActionsButtonProps = {
-  handleEditButtonClick: () => void;
-  handleDeleteButtonClick: () => void;
+  handleEditButtonClick?: () => void;
+  handleDeleteButtonClick?: () => void;
+  handleHistoryButtonClick?: () => void;
 };
 
 /**
@@ -22,6 +24,7 @@ type RowActionsButtonProps = {
 export const RowActionsButton: React.FC<RowActionsButtonProps> = ({
   handleEditButtonClick,
   handleDeleteButtonClick,
+  handleHistoryButtonClick,
 }) => {
   const [open, setOpen] = useState<boolean>(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -48,32 +51,51 @@ export const RowActionsButton: React.FC<RowActionsButtonProps> = ({
         ></GridActionsCellItem>
       </Tooltip>
       <Menu open={open} anchorEl={anchorEl} onClose={handleMenuClose}>
-        <MenuItem
-          aria-label="Edit this table row"
-          data-testid="edit-row"
-          onClick={() => {
-            handleEditButtonClick();
-            setOpen(false);
-          }}
-        >
-          <ListItemIcon>
-            <EditIcon color="action" />
-          </ListItemIcon>
-          <Typography>Edit</Typography>
-        </MenuItem>
-        <MenuItem
-          aria-label="Delete this table row"
-          data-testid="delete-row"
-          onClick={() => {
-            handleDeleteButtonClick();
-            setOpen(false);
-          }}
-        >
-          <ListItemIcon>
-            <DeleteIcon color="error" />
-          </ListItemIcon>
-          <Typography>Delete</Typography>
-        </MenuItem>
+        {handleEditButtonClick && (
+          <MenuItem
+            aria-label="Edit this table row"
+            data-testid="edit-row"
+            onClick={() => {
+              handleEditButtonClick();
+              setOpen(false);
+            }}
+          >
+            <ListItemIcon>
+              <EditIcon color="action" />
+            </ListItemIcon>
+            <Typography>Edit</Typography>
+          </MenuItem>
+        )}
+        {handleHistoryButtonClick && (
+          <MenuItem
+            aria-label="View history of this item"
+            data-testid="history-row"
+            onClick={() => {
+              handleHistoryButtonClick();
+              setOpen(false);
+            }}
+          >
+            <ListItemIcon>
+              <HistoryIcon color="action" />
+            </ListItemIcon>
+            <Typography>History</Typography>
+          </MenuItem>
+        )}
+        {handleDeleteButtonClick && (
+          <MenuItem
+            aria-label="Delete this table row"
+            data-testid="delete-row"
+            onClick={() => {
+              handleDeleteButtonClick();
+              setOpen(false);
+            }}
+          >
+            <ListItemIcon>
+              <DeleteIcon color="error" />
+            </ListItemIcon>
+            <Typography>Delete</Typography>
+          </MenuItem>
+        )}
       </Menu>
     </>
   );
