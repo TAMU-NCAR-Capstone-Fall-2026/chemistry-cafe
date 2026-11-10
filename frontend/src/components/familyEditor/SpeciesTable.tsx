@@ -24,18 +24,6 @@ import {
 } from "./IssueIndicators";
 import { OtherPropertiesModal } from "../modals/OtherPropertiesModal";
 
-// Shows each other property as "__key = value". A nested value shows as JSON.
-const otherPropertiesSummary = (
-  properties?: Record<string, unknown> | null,
-): string =>
-  Object.entries(properties ?? {})
-    .map(([key, value]) => {
-      const text =
-        typeof value === "string" ? value || '""' : JSON.stringify(value);
-      return `__${key} = ${text ?? "null"}`;
-    })
-    .join(", ");
-
 const EXCLUSIVE_OPTION_MESSAGE =
   "Only one of constant concentration, constant mixing ratio, or third body may be set.";
 
@@ -265,8 +253,14 @@ export const SpeciesTable = ({
       flex: 1.5,
       minWidth: 200,
       sortable: false,
-      valueGetter: (_value, row: Species) =>
-        otherPropertiesSummary(row.otherProperties),
+      valueGetter: (_value, row: Species): string =>
+          Object.entries(row.otherProperties ?? {})
+            .map(([key, value]) => {
+              const text =
+                typeof value === "string" ? value || '""' : JSON.stringify(value);
+              return `__${key} = ${text ?? "null"}`;
+            })
+            .join(", "),
       renderCell: (params: GridRenderCellParams<Species>) => (
         <Typography
           variant="body2"

@@ -15,7 +15,7 @@ import React, { useLayoutEffect, useState } from "react";
 import { Species } from "../../types/chemistryModels";
 import UnitComponent from "../UnitComponent";
 import { modalStyle } from "./modalStyle";
-import { OtherPropertiesField } from "./OtherPropertiesField";
+import { OtherPropertiesField } from "../OtherPropertiesField";
 
 type SpeciesEditorModalProps = {
   open: boolean;

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Box, IconButton, Tooltip, Typography } from "@mui/material";
 import EditIcon from "@mui/icons-material/Edit";
-import { OtherProperties, OtherPropertiesModal } from "./OtherPropertiesModal";
+import { OtherProperties, OtherPropertiesModal } from "./modals/OtherPropertiesModal";
 
 // Shows each other property as "__key = value". A nested value shows as JSON.
-const otherPropertiesSummary = (
+export const otherPropertiesSummary = (
   properties?: Record<string, unknown> | null,
 ): string =>
   Object.entries(properties ?? {})

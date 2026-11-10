@@ -38,7 +38,7 @@ import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import { bySpeciesName, SelectSpeciesButton } from "../SelectSpeciesButton";
 import { reactionTypeToString } from "../../helpers/stringify";
 import { modalStyle } from "./modalStyle";
-import { OtherPropertiesField } from "./OtherPropertiesField";
+import { OtherPropertiesField } from "../OtherPropertiesField";
 import { UUID } from "crypto";
 import { useUserPreferences } from "../UserPreferencesContext";
 import {

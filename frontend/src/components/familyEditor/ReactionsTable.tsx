@@ -64,18 +64,7 @@ import {
   showsAttribute,
   withActivationValue,
 } from "../../helpers/activationEnergy";
-
-// Shows each other property as "__key = value". A nested value shows as JSON.
-const otherPropertiesSummary = (
-  properties?: Record<string, unknown> | null,
-): string =>
-  Object.entries(properties ?? {})
-    .map(([key, value]) => {
-      const text =
-        typeof value === "string" ? value || '""' : JSON.stringify(value);
-      return `__${key} = ${text ?? "null"}`;
-    })
-    .join(", ");
+import { otherPropertiesSummary } from "../OtherPropertiesField";
 
 /**
  * Gives a column width that shows the whole name and unit of a parameter
