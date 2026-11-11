@@ -52,6 +52,11 @@ export const SpeciesView = ({ family, updateFamily }: ViewProps) => {
             ([sid]) => sid !== id,
           ),
         ),
+        densities: Object.fromEntries(
+          Object.entries(phase.densities ?? {}).filter(
+            ([sid]) => sid !== id,
+          ),
+        ),
       })),
       mechanisms: family.mechanisms.map((mechanism) => ({
         ...mechanism,

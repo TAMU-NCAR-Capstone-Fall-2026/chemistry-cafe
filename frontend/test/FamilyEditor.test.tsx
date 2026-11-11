@@ -427,6 +427,7 @@ describe("PhaseView", () => {
             description: "Liquid phase",
             speciesIds: [],
             diffusionCoefficients: {},
+            densities: {},
           },
         ],
       }),

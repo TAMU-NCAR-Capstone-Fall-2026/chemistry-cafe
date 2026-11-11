@@ -89,6 +89,7 @@ const gasPhase: Phase = {
   name: "gas",
   description: null,
   speciesIds: species.map((s) => s.id),
+  densities: { [molecularWeightSpecies.id]: 1.2 },
 };
 
 const aerosolPhase: Phase = {
@@ -96,6 +97,7 @@ const aerosolPhase: Phase = {
   name: "aerosol",
   description: null,
   speciesIds: [molecularWeightSpecies.id, plainSpecies.id],
+  densities: { [molecularWeightSpecies.id]: 900 },
 };
 
 // present in the family but NOT referenced by the mechanism (filtering case)
@@ -399,6 +401,27 @@ describe("Phase serialization", () => {
     expect(aerosol.species.map((s: any) => s.name).sort()).toEqual(
       [molecularWeightSpecies.name, plainSpecies.name].sort(),
     );
+    expect(
+      gas.species.find(
+        (s: any) => s.name === molecularWeightSpecies.name,
+      )["density [kg m-3]"],
+    ).toBe(1.2);
+    expect(
+      aerosol.species.find(
+        (s: any) => s.name === molecularWeightSpecies.name,
+      )["density [kg m-3]"],
+    ).toBe(900);
+  });
+
+  it("imports phase species densities", () => {
+    const importedGas = imported.phases.find((p) => p.name === "gas")!;
+    const importedAerosol = imported.phases.find((p) => p.name === "aerosol")!;
+    const importedSpeciesId = imported.species.find(
+      (s) => s.name === molecularWeightSpecies.name,
+    )!.id;
+
+    expect(importedGas.densities?.[importedSpeciesId]).toBe(1.2);
+    expect(importedAerosol.densities?.[importedSpeciesId]).toBe(900);
   });
 
   it("omits phases the mechanism does not reference", () => {

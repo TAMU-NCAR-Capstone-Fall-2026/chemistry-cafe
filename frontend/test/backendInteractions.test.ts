@@ -54,12 +54,14 @@ const frontendPhase: Phase = {
   name: "gas",
   description: null,
   speciesIds: [apiSpecies.id],
+  densities: { [apiSpecies.id]: 1200 },
 };
 
 const apiPhase: APIPhase = {
   id: frontendPhase.id as UUID,
   name: frontendPhase.name,
   species: [],
+  densities: { [apiSpecies.id]: 1200 },
 };
 
 const frontendReaction: Reaction = {
@@ -685,12 +687,14 @@ describe("Phase Conversion", () => {
     const result = frontendToAPIPhase(frontendPhase);
     expect(result.id).toEqual(apiPhase.id);
     expect(result.name).toEqual(apiPhase.name);
+    expect(result.densities).toEqual(frontendPhase.densities);
   });
 
   test("Conversion from backend to frontend definition", () => {
     const result = apiToFrontendPhase(apiPhase);
     expect(result.id).toEqual(frontendPhase.id);
     expect(result.name).toEqual(frontendPhase.name);
+    expect(result.densities).toEqual(apiPhase.densities);
   });
 
   test("description round-trips to the backend", () => {

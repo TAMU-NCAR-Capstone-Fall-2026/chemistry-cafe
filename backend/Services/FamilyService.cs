@@ -219,6 +219,7 @@ public class FamilyService(ChemistryDbContext context, UserService? userService 
                     {
                         Species = speciesById[id],
                         DiffusionCoefficient = p.DiffusionCoefficientOf(id),
+                        Density = p.DensityOf(id),
                     })
                     .ToList();
                 return phase;
@@ -423,6 +424,8 @@ public class FamilyService(ChemistryDbContext context, UserService? userService 
             missing.AddRange(phase.SpeciesIds.Where(id => !speciesIds.Contains(id)));
             // A diffusion coefficient may only be given for a member species.
             missing.AddRange(phase.DiffusionCoefficients.Keys.Where(id => !phase.SpeciesIds.Contains(id)));
+            // A density may only be given for a member species.
+            missing.AddRange(phase.Densities.Keys.Where(id => !phase.SpeciesIds.Contains(id)));
         }
 
         // Mechanism memberships.
@@ -791,6 +794,7 @@ public class FamilyService(ChemistryDbContext context, UserService? userService 
                 {
                     Species = existing.Species.Single(s => s.Id == sid),
                     DiffusionCoefficient = incomingPhase.DiffusionCoefficientOf(sid),
+                    Density = incomingPhase.DensityOf(sid),
                 })
                 .ToList();
             context.Phases.Add(added);
@@ -818,6 +822,7 @@ public class FamilyService(ChemistryDbContext context, UserService? userService 
                     existingPhase.PhaseSpecies.Add(member);
                 }
                 member.DiffusionCoefficient = incomingPhase.DiffusionCoefficientOf(sid);
+                member.Density = incomingPhase.DensityOf(sid);
             }
         });
 

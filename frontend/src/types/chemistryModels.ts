@@ -137,6 +137,12 @@ export type Phase = {
    */
   diffusionCoefficients?: Record<UUID, number>;
 
+  /**
+   * Density [kg m-3] of each member species, by species id.
+   * A species without a value has no key.
+   */
+  densities?: Record<UUID, number>;
+
   /** Optional, additional properties for the phases which are not defined in the mechanism configuration schema but can be queried for in musica */
   otherProperties?: Record<string, unknown>;
 };

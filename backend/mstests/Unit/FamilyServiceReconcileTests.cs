@@ -222,6 +222,47 @@ namespace ChemistryCafeAPI.Tests
         }
 
         [TestMethod]
+        public async Task Update_ChangesPhaseDensitiesIndependently()
+        {
+            FamilyDto dto = BuildBaseFamily();
+            PhaseDto gasPhase = dto.Phases.Single();
+            Guid a = dto.Species.Single(s => s.Name == "A").Id;
+            Guid b = dto.Species.Single(s => s.Name == "B").Id;
+            gasPhase.Densities = new Dictionary<Guid, double> { [a] = 1.2 };
+            PhaseDto liquidPhase = new()
+            {
+                Id = Guid.NewGuid(),
+                Name = "liquid",
+                SpeciesIds = new List<Guid> { a },
+                Densities = new Dictionary<Guid, double> { [a] = 900 },
+            };
+            dto.Phases.Add(liquidPhase);
+            await CreateBaseFamilyAsync(dto);
+
+            Family created = await ReloadAsync(dto.Id);
+            Assert.AreEqual(1.2, created.Phases.Single(p => p.Id == gasPhase.Id)
+                .PhaseSpecies.Single(ps => ps.SpeciesId == a).Density);
+            Assert.AreEqual(900, created.Phases.Single(p => p.Id == liquidPhase.Id)
+                .PhaseSpecies.Single(ps => ps.SpeciesId == a).Density);
+
+            gasPhase.Densities = new Dictionary<Guid, double> { [a] = 1.5, [b] = 1.8 };
+            Assert.AreEqual(QueryResult.Success, await UpdateAsync(dto, _nameIdentifier));
+
+            Family updated = await ReloadAsync(dto.Id);
+            Phase updatedGas = updated.Phases.Single(p => p.Id == gasPhase.Id);
+            Assert.AreEqual(1.5, updatedGas.PhaseSpecies.Single(ps => ps.SpeciesId == a).Density);
+            Assert.AreEqual(1.8, updatedGas.PhaseSpecies.Single(ps => ps.SpeciesId == b).Density);
+            Assert.AreEqual(900, updated.Phases.Single(p => p.Id == liquidPhase.Id)
+                .PhaseSpecies.Single(ps => ps.SpeciesId == a).Density);
+
+            gasPhase.Densities.Remove(a);
+            Assert.AreEqual(QueryResult.Success, await UpdateAsync(dto, _nameIdentifier));
+
+            updatedGas = (await ReloadAsync(dto.Id)).Phases.Single(p => p.Id == gasPhase.Id);
+            Assert.IsNull(updatedGas.PhaseSpecies.Single(ps => ps.SpeciesId == a).Density);
+        }
+
+        [TestMethod]
         public async Task Update_DeletesMechanism()
         {
             FamilyDto dto = await CreateBaseFamilyAsync(BuildBaseFamily());

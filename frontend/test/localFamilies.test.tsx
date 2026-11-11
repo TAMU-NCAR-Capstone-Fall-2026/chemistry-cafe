@@ -68,6 +68,7 @@ const phase: Phase = {
   name: "Test Phase",
   description: null,
   speciesIds: [species.id],
+  densities: { [species.id]: 850 },
 };
 
 const mechanism: Mechanism = {
@@ -105,6 +106,8 @@ describe("cloneFamily", () => {
 
     expect(result.phases.at(0)?.name).toEqual(family.phases.at(0)?.name);
     expect(result.phases.at(0)?.id).not.toEqual(family.phases.at(0)?.id);
+    const clonedSpeciesId = result.species.at(0)!.id;
+    expect(result.phases.at(0)?.densities).toEqual({ [clonedSpeciesId]: 850 });
 
     expect(result.reactions.at(0)?.name).toEqual(family.reactions.at(0)?.name);
     expect(result.reactions.at(0)?.id).not.toEqual(family.reactions.at(0)?.id);

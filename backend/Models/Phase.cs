@@ -30,7 +30,7 @@ public class Phase
 
     // The join rows for the species in this phase. Each row holds the values
     // that belong to one species in this phase, for example the diffusion
-    // coefficient.
+    // coefficient or density.
     [JsonIgnore]
     public ICollection<PhaseSpecies> PhaseSpecies { get; set; } = new List<PhaseSpecies>();
 
@@ -44,8 +44,8 @@ public class Phase
 }
 
 /// <summary>
-/// Joins a phase and a species. The diffusion coefficient is on this join,
-/// because one species can have a different value in each phase.
+/// Joins a phase and a species. Phase-specific values are on this join,
+/// because a species can have different values in each phase.
 /// </summary>
 public class PhaseSpecies
 {
@@ -59,4 +59,7 @@ public class PhaseSpecies
 
     // Diffusion coefficient [m2 s-1]
     public double? DiffusionCoefficient { get; set; }
+
+    // Density [kg m-3]
+    public double? Density { get; set; }
 }
