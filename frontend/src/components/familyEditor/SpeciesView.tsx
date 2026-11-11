@@ -34,10 +34,13 @@ export const SpeciesView = ({ family, updateFamily }: ViewProps) => {
   };
   const importSpecies = () => {
     importCSV({
-      Date:"string",
-      Additions:"number",
-      Deletions:"number",
-      Extension:"string"
+      "Ref#":"number",
+      Files:"string",
+      Author:"string",
+      Year:"string",
+      "Title ":"string",
+      Journal:"string",
+      "Vol:Pg":"string"
     }).then((data)=>{
       console.log(data);
     }).catch((err)=>{
