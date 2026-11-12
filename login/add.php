@@ -12,12 +12,12 @@ if (!$_POST['username'] | !$_POST['pass'] | !$_POST['pass2'] | (strlen($_POST['t
 }
 
 // checks if the username is in use
-if (!get_magic_quotes_gpc()) {
+if (!function_exists('get_magic_quotes_gpc') || !get_magic_quotes_gpc()) {
 	$_POST['username'] = addslashes($_POST['username']);
 }
 
 $usercheck = $_POST['username'];
-$check = pg_query("SELECT username FROM users WHERE username = '$usercheck'") 
+$check = pg_query($con, "SELECT username FROM users WHERE username = '$usercheck'") 
 or die("User not available from database");
 $check2 = pg_num_rows($check);
 
@@ -34,7 +34,7 @@ if ($_POST['pass'] != $_POST['pass2']) {
 // here we encrypt the password and add slashes if needed
 $_POST['pass'] = md5($_POST['pass']);
 
-if (!get_magic_quotes_gpc()) {
+if (!function_exists('get_magic_quotes_gpc') || !get_magic_quotes_gpc()) {
 	$_POST['pass'] = addslashes($_POST['pass']);
 	$_POST['username'] = addslashes($_POST['username']);
 }
@@ -47,7 +47,7 @@ $insert = "INSERT INTO users (username, password, initials) VALUES ('"
             ."', '"
             .$_POST['tli']
             ."')";
-$add_member = pg_query($insert);
+$add_member = pg_query($con, $insert);
 ?>
 
  <h1>Registered</h1>

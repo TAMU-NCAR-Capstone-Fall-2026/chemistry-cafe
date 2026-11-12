@@ -25,30 +25,40 @@ switch($_GET['action'])  {
 
 
 /**  Function to Add a species  **/
+function pg_bool($val) {
+    if ($val === true || $val === 't' || $val === 'true' || $val === 1 || $val === '1') return 't';
+    if ($val === false || $val === 'f' || $val === 'false' || $val === 0 || $val === '0') return 'f';
+    return 'f';
+}
+
+function pg_num($val) {
+    return ($val === '' || $val === null || !is_numeric($val)) ? null : $val;
+}
+
 function insert_species() {
     global $con;
 
     $data = json_decode(file_get_contents("php://input")); 
 
-    $name          = $data->speciesname;    
-    $formula       = $data->formula;    
-    $edescription  = $data->edescription;    
-    $aerosol       = $data->aerosol;
-    $transport     = $data->transport;
-    $source        = $data->source;
-    $solve         = $data->solve;
-    $wet_dep       = $data->wet_dep;
-    $henrys_law_type  = $data->henrys_law_type;
-    $henrys_sources   = $data->henrys_sources ;
-    $molecular_weight = $data->molecular_weight;
-    $kh_298           = $data->kh_298          ;
-    $dh_r             = $data->dh_r            ;
-    $k1_298           = $data->k1_298          ;
-    $dh1_r            = $data->dh1_r           ;
-    $k2_298           = $data->k2_298          ;
-    $dh2_r            = $data->dh2_r           ;
-    $dry_dep       = $data->dry_dep;
-    $selectedFamilyIds = $data->selectedFamilyIds;
+    $name          = $data->speciesname ?? null;    
+    $formula       = $data->formula ?? null;    
+    $edescription  = $data->edescription ?? null;    
+    $aerosol       = pg_bool($data->aerosol ?? false);
+    $transport     = pg_bool($data->transport ?? false);
+    $source        = $data->source ?? null;
+    $solve         = pg_bool($data->solve ?? false);
+    $wet_dep       = pg_bool($data->wet_dep ?? false);
+    $dry_dep       = pg_bool($data->dry_dep ?? false);
+    $henrys_law_type  = $data->henrys_law_type ?? null;
+    $henrys_sources   = $data->henrys_sources ?? null;
+    $molecular_weight = pg_num($data->molecular_weight ?? null);
+    $kh_298           = pg_num($data->kh_298 ?? null);
+    $dh_r             = pg_num($data->dh_r ?? null);
+    $k1_298           = pg_num($data->k1_298 ?? null);
+    $dh1_r            = pg_num($data->dh1_r ?? null);
+    $k2_298           = pg_num($data->k2_298 ?? null);
+    $dh2_r            = pg_num($data->dh2_r ?? null);
+    $selectedFamilyIds = $data->selectedFamilyIds ?? array();
 
     $result = pg_prepare($con, "insert_molecules",
             "INSERT INTO molecules 
@@ -64,7 +74,7 @@ function insert_species() {
     $new_id = pg_fetch_array($qry_res)[0];
 
     if ($qry_res) {
-        $retval = array('formula' => $formula,'name' =>$name, 'qry' => $qry, 'msg' => "Molecule Added Successfully:".$name, 'success' => true, 'error' => "No error" );
+        $retval = array('formula' => $formula,'name' =>$name, 'qry' => null, 'msg' => "Molecule Added Successfully:".$name, 'success' => true, 'error' => "No error" );
     } 
     else {
         $retval = array('msg' => "Species was not added:".$name, 'success' => false, 'error' => 'Error In inserting record');
@@ -137,26 +147,26 @@ function get_species() {
 function update_species() {
     global $con;
     $data = json_decode(file_get_contents("php://input")); 
-    $id            = $data->id;    
-    $name          = $data->speciesname;    
-    $formula       = $data->formula;    
-    $edescription  = $data->edescription;    
-    $aerosol       = $data->aerosol;
-    $transport     = $data->transport;
-    $source        = $data->source;
-    $solve         = $data->solve;
-    $wet_dep       = $data->wet_dep;
-    $dry_dep       = $data->dry_dep;
-    $henrys_law_type  = $data->henrys_law_type;
-    $henrys_sources   = $data->henrys_sources ;
-    $molecular_weight = $data->molecular_weight;
-    $kh_298           = $data->kh_298          ;
-    $dh_r             = $data->dh_r            ;
-    $k1_298           = $data->k1_298          ;
-    $dh1_r            = $data->dh1_r           ;
-    $k2_298           = $data->k2_298          ;
-    $dh2_r            = $data->dh2_r           ;
-    $selectedFamilyIds = $data->selectedFamilyIds;
+    $id            = $data->id ?? null;    
+    $name          = $data->speciesname ?? null;    
+    $formula       = $data->formula ?? null;    
+    $edescription  = $data->edescription ?? null;    
+    $aerosol       = pg_bool($data->aerosol ?? false);
+    $transport     = pg_bool($data->transport ?? false);
+    $source        = $data->source ?? null;
+    $solve         = pg_bool($data->solve ?? false);
+    $wet_dep       = pg_bool($data->wet_dep ?? false);
+    $dry_dep       = pg_bool($data->dry_dep ?? false);
+    $henrys_law_type  = $data->henrys_law_type ?? null;
+    $henrys_sources   = $data->henrys_sources ?? null;
+    $molecular_weight = pg_num($data->molecular_weight ?? null);
+    $kh_298           = pg_num($data->kh_298 ?? null);
+    $dh_r             = pg_num($data->dh_r ?? null);
+    $k1_298           = pg_num($data->k1_298 ?? null);
+    $dh1_r            = pg_num($data->dh1_r ?? null);
+    $k2_298           = pg_num($data->k2_298 ?? null);
+    $dh2_r            = pg_num($data->dh2_r ?? null);
+    $selectedFamilyIds = $data->selectedFamilyIds ?? array();
 
     $to_be = array($name, $formula, $edescription, $transport, $source, $aerosol, $solve, $wet_dep, $dry_dep, $henrys_law_type, $molecular_weight, $kh_298, $dh_r, $k1_298, $dh1_r, $k2_298, $dh2_r, $henrys_sources);
 

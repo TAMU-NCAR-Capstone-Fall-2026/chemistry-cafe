@@ -168,7 +168,7 @@ function get_all_reactions() {
       $row_array['wrf_custom_rate_id'] = $reaction['wrf_custom_rate_id'];
       $row_array['rateString'] = $reaction['ratestring'];
       $row_array['obsolete'] = ($reaction['obsolete'] === 't') ;
-      $row_array['reactantArray'] = json_decode($reaction['reactantarray']);
+      $row_array['reactantArray'] = ( empty($reaction['reactantarray']) ? array() : json_decode($reaction['reactantarray']) );
       $row_array['reactantString'] = $reaction['reactantstring'];
       $row_array['productString'] = $reaction['productstring'];
       $row_array['branchArray'] = ( empty($reaction['brancharray']) ? array() : json_decode($reaction['brancharray'])  );//json_decode($reaction['brancharray']);

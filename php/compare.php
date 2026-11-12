@@ -31,8 +31,7 @@ function compare_branch_branch() {
     while ($reaction = pg_fetch_array($unique_to_0,NULL, PGSQL_ASSOC)) {
       $row_array['branch_id'] = $reaction['branch_id'];
       $row_array['branch_id'] = $reaction['branch_id'];
-
-
+    }
 }
 
 function rest_of_comparison(){

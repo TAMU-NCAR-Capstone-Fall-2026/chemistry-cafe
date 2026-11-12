@@ -27,6 +27,10 @@ switch($_GET['action'])  {
             create_branch_from_tag();
             break;
   
+    case 'create_branch' :
+            create_branch();
+            break;
+  
     case 'get_user_id' :
             get_user_id();
             break;
@@ -41,7 +45,7 @@ switch($_GET['action'])  {
             $branch_id = 78;
             $tags = pg_query($con,"SELECT filename,branch_id FROM tags WHERE id = ".$id.";");
             $tagref= pg_fetch_array($tags,0,$result_type = PGSQL_ASSOC);
-            $tagdir = '/home/some_testers_dir/testdir/'.$tagref['filename'];
+            $tagdir = sys_get_temp_dir().'/'.$tagref['filename'];
             $branch_id = $tagref['branch_id'];
             if( is_dir( $tagdir )) die ('directory exists: '.$tagdir."\n");
             if( !mkdir($tagdir)) die ('Can not make directory: '.$tagdir."\n");
@@ -237,6 +241,38 @@ function create_branch_from_tag() {
     return json_encode($out);
 }
 
+function create_branch() {
+    global $con;
+    $data = json_decode(file_get_contents("php://input"));
+    $name = trim($data->name ?? '');
+    $source_branch_id = !empty($data->source_branch_id) ? intval($data->source_branch_id) : null;
+
+    if (empty($name)) {
+        http_response_code(400);
+        echo json_encode(array("error" => "Name is required"));
+        return;
+    }
+
+    $result = pg_prepare($con, "create_standalone_branch", "INSERT INTO branches (name) VALUES ($1) RETURNING id;");
+    $result = pg_execute($con, "create_standalone_branch", array($name));
+
+    if (!$result) {
+        http_response_code(400);
+        echo json_encode(array("error" => "Failed to create branch or branch already exists"));
+        return;
+    }
+
+    $row = pg_fetch_array($result);
+    $branch_id = $row[0];
+
+    if ($source_branch_id) {
+        pg_query($con, "INSERT INTO branchreactions (branch_id, reaction_id) SELECT ".$branch_id.", reaction_id FROM branchreactions WHERE branch_id = ".$source_branch_id.";");
+        pg_query($con, "INSERT INTO branchphotolysis (branch_id, photolysis_id) SELECT ".$branch_id.", photolysis_id FROM branchphotolysis WHERE branch_id = ".$source_branch_id.";");
+    }
+
+    echo json_encode(array("success" => true, "id" => $branch_id, "name" => $name));
+}
+
 
     
 
@@ -355,7 +391,7 @@ function get_all_comments_for_tag($tag_id){
             ON u.id=user_id 
             INNER JOIN tag_comments AS tc
             ON tc.comment_id=c.id
-            WHERE tc.tag_id = ".$tag_id.
+            WHERE tc.tag_id = ".$tag_id." ".
             "ORDER BY c.date DESC;" );
     while($row = pg_fetch_array($comments))
     {
@@ -1047,9 +1083,10 @@ function write_kpp_tag_file($tag_dir, $target_file_name, $tag_id, $branch_id){
     }
 
     // construct the def file 
-    $b_header = file_get_contents("/home/www/html/data/boxmox_header.def");
-    $header = file_get_contents("/home/www/html/data/header.def");
-    $footer = file_get_contents("/home/www/html/data/footer.def");
+    $data_dir = realpath(__DIR__ . '/../data') ?: '/home/www/html/data';
+    $b_header = file_get_contents($data_dir . "/boxmox_header.def");
+    $header = file_get_contents($data_dir . "/header.def");
+    $footer = file_get_contents($data_dir . "/footer.def");
 
     $spc_file_name = "#include ".$target_file_name.".spc\n";
     $eqn_file_name = "#include ".$target_file_name.".eqn\n";
@@ -1809,7 +1846,7 @@ function write_cesm_tag_file($tag_dir,$target_file_name,$tag_id, $mechanism_id){
 
 /*
     // campp  cam-chem preprocessor skeleton files
-    $campp_src = "/home/www/html/campp_skel";
+    $campp_src = realpath(__DIR__ . '/../campp_skel') ?: "/home/www/html/campp_skel";
     $campp_dst = $cesm_dir.'/campp';
 
     mkdir($campp_dst);
@@ -2107,7 +2144,7 @@ function tag_gas_species($con, $tag_id) {
                  INNER JOIN tag_reactions ON tag_reactions.reaction_id = reaction.id
                  WHERE tag_reactions.tag_id = ".$tag_id." ) AS ms ) AS mechanism_species
          INNER JOIN molecules ON molecules.name = mechanism_species.moleculename
-         WHERE molecules.aerosol = 0";
+         WHERE molecules.aerosol = FALSE";
 
     return pg_query($con, $species_query);
 
@@ -2118,18 +2155,18 @@ function tag_gas_reactions($con, $tag_id) {
 
     // get the ids and types for all gas-phase reactions
     $reactions_query =
-      "SELECT id, 'PHOTOLYSIS' AS type, rate AS label
+      "SELECT photolysis.id, 'PHOTOLYSIS' AS type, photolysis.rate AS label
          FROM photolysis
          INNER JOIN tag_photolysis ON tag_photolysis.photolysis_id = photolysis.id
          WHERE tag_photolysis.tag_id = ".$tag_id."
-       UNION SELECT id,
+       UNION SELECT reactions.id,
            CASE
              WHEN r1 IS NOT NULL AND r3 IS NULL AND r4 IS NULL AND r5 IS NULL
                   THEN 'ARRHENIUS'
              WHEN r1 IS NOT NULL AND r2 IS NOT NULL AND r3 IS NOT NULL AND
                   r4 IS NOT NULL AND r5 IS NOT NULL THEN 'TROE' 
              ELSE 'UNSUPPORTED'
-           END AS type, label
+           END AS type, reactions.label
          FROM reactions
          INNER JOIN tag_reactions ON tag_reactions.reaction_id = reactions.id
          WHERE tag_reactions.tag_id = ".$tag_id;

@@ -79,7 +79,8 @@ function upload_reference() {
     
     $out .=" userid:".$user_id." newname:".$new_file_name;
     
-    $ok = move_uploaded_file($tmp_file_name, '/home/www/html/reference_materials/'.$new_file_name);
+    $ref_materials_dir = realpath(__DIR__ . '/../reference_materials') ?: '/home/www/html/reference_materials';
+    $ok = move_uploaded_file($tmp_file_name, $ref_materials_dir.'/'.$new_file_name);
 
     print_r(json_encode($out));
     return(json_encode($out));

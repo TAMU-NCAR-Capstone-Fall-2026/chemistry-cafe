@@ -16,6 +16,20 @@
     -->
     <div ng-show="purpose=='showMechanisms'">
         <div class="row col-md-12">
+            <div class="panel panel-default" style="padding: 15px; margin-bottom: 20px;">
+                <h4>Create New Mechanism</h4>
+                <form class="form-inline">
+                    <div class="form-group" style="margin-right: 10px;">
+                        <input type="text" class="form-control" ng-model="newMechanismName" placeholder="New Mechanism Name" style="min-width: 250px;">
+                    </div>
+                    <div class="form-group" style="margin-right: 10px;">
+                        <select class="form-control" ng-model="copyFromBranch" ng-options="b as ('Copy from ' + b.name) for b in branchArray">
+                            <option value="">-- Blank Mechanism (Empty) --</option>
+                        </select>
+                    </div>
+                    <button type="button" class="btn btn-success" ng-click="createMechanism()">Create</button>
+                </form>
+            </div>
             <table class="table table-striped table-bordered" >
             <thead>
                 <th >Mechanism Name</th>

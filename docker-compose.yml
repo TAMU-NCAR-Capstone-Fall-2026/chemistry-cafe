@@ -1,0 +1,46 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: chemistry-cafe:latest
+    container_name: chemistry-cafe-web
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8088}:80"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=chem3
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - tag_files:/var/www/html/tag_files
+      - reference_materials:/var/www/html/reference_materials
+
+  db:
+    image: postgres:15-alpine
+    container_name: chemistry-cafe-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=chem3
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - chem3_pgdata:/var/lib/postgresql/data
+      - ./db/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./db/02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d chem3"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  chem3_pgdata:
+  tag_files:
+  reference_materials:

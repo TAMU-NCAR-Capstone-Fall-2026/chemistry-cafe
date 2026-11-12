@@ -39,6 +39,7 @@ switch($_GET['action'])  {
 function get_externals() {    
     global $con;
 
+    $response = array();
     $qry = pg_query($con, "SELECT * FROM externals ORDER BY ordering;");
     while($row = pg_fetch_assoc($qry,NULL))
     {

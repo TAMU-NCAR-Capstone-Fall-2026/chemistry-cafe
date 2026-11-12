@@ -14,7 +14,7 @@ if(isset($_COOKIE['chemdb_id'])){
     //if there is, it logs you in and directes you to the members page
     $username = $_COOKIE['chemdb_id']; 
     $pass = $_COOKIE['chemdb_key'];
-    $check = pg_query("SELECT * FROM users WHERE username = '$username'")or die("User not available from database");
+    $check = pg_query($con, "SELECT * FROM users WHERE username = '$username'")or die("User not available from database");
 
     while($info = pg_fetch_array( $check )){
         //echo(json_encode($info));
@@ -35,8 +35,8 @@ if (isset($_POST['submit'])) {
     if(!$_POST['pass']){
         die('You did not fill in a password.');
     }
-    $_POST['username'] = pg_escape_string($_POST['username']);
-    $check = pg_query("SELECT * FROM users WHERE username = '".$_POST['username']."'")or die("user not available from db");
+    $_POST['username'] = pg_escape_string($con, $_POST['username']);
+    $check = pg_query($con, "SELECT * FROM users WHERE username = '".$_POST['username']."'")or die("user not available from db");
     $check2 = pg_num_rows($check);
     if ($check2 != 1){
         // Die if there is not precisely one user with that login

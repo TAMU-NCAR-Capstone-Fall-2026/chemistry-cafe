@@ -224,7 +224,13 @@ app.controller('tagsController',['$scope','$http','$window', function ($scope, $
              }) 
              .success( function (data ) {
                  get_all_tags();
+                 $scope.exportName = '';
+                 $scope.exportComment = '';
                  $scope.purpose='exportTag';   
+                 alert('Tag created successfully!');
+             })
+             .error( function(err) {
+                 alert('Failed to create tag');
              });
     }
 
@@ -235,8 +241,6 @@ app.controller('tagsController',['$scope','$http','$window', function ($scope, $
     }
 
     $scope.createBranchFromTag = function(tag_id) {
-        //alert('creating Mechanism from Tag : '+tag_id);
-        //alert('New Mechanism : '+$scope.newBranchName);
         if(!$scope.newBranchName){
             alert('Please enter a name for the new mechanism');
             return;
@@ -247,18 +251,40 @@ app.controller('tagsController',['$scope','$http','$window', function ($scope, $
                 'tag_id': tag_id
             })
             .success( function (data ) {
-                //alert(data);
+                get_all_branches();
                 get_all_tags();
-                $scope.purpose='createTag';
+                $scope.newBranchName = null;
+                $scope.sourceTag = null;
+                $scope.purpose='showMechanisms';
+                alert('Mechanism created from tag successfully!');
+            })
+            .error( function(err) {
+                alert('Failed to create mechanism from tag');
             });
 
     }
 
+    $scope.createMechanism = function() {
+        if(!$scope.newMechanismName){
+            alert('Please enter a name for the new mechanism');
+            return;
+        }
+        var sourceId = $scope.copyFromBranch ? $scope.copyFromBranch.id : null;
+        $http.post("/php/tags.php?action=create_branch", {
+            'name': $scope.newMechanismName,
+            'source_branch_id': sourceId
+        }).success(function(data) {
+            get_all_branches();
+            $scope.newMechanismName = '';
+            $scope.copyFromBranch = null;
+            alert('Mechanism created successfully!');
+        }).error(function(err) {
+            alert('Failed to create mechanism: ' + (err && err.error ? err.error : 'error'));
+        });
+    }
+
     $scope.createBranchFromBranch = function() {
-        alert('Not implemented');
-        alert('creating Mechanism from Mechanism name: '+ $scope.sourceBranch.name);
-        alert('creating Mechanism from Mechanism id: '+ $scope.sourceBranch.id);
-        alert('New Mechanism : '+$scope.newBranchName);
+        $scope.createMechanism();
     }
 
     $scope.populateEditTagForm = function(tag){
