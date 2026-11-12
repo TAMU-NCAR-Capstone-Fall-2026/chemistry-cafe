@@ -42,7 +42,7 @@ export const SpeciesView = ({ family, updateFamily }: ViewProps) => {
   }
   const exportSpecies = () => {
     console.log(family.species)
-    exportCSV(family.species,SpeciesTypeMap)
+    exportCSV(family.species,SpeciesTypeMap,`${family.name.replace(/[^a-zA-Z]/g,"_")}_species`)
   }
   const removeSpecies = (id: UUID) => {
     const originalSpecies: Species | undefined = family.species.find(
