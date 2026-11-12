@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Box, Tooltip, Typography } from "@mui/material";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
-import { Species } from "../../types/chemistryModels";
+import {Species, SpeciesTypeMap} from "../../types/chemistryModels";
 import { applySpeciesRowUpdate } from "../../helpers/editorHelpers";
 import { SpeciesEditorModal } from "../modals/SpeciesEditorModal";
 import { RowActionsButton } from "../RowActionsButton";
@@ -10,7 +10,8 @@ import { generateID } from "../../helpers/localFamilies";
 import { ViewProps } from "./ViewProps";
 import { useFamilyValidation } from "./FamilyValidationContext";
 import { SpeciesTable } from "./SpeciesTable";
-import {importCSV} from "../../helpers/importHelpers.ts";
+import { exportCSV, importCSV} from "../../helpers/importExportHelpers.ts";
+
 
 export const SpeciesView = ({ family, updateFamily }: ViewProps) => {
   const { byItem } = useFamilyValidation();
@@ -33,21 +34,16 @@ export const SpeciesView = ({ family, updateFamily }: ViewProps) => {
     setSpeciesEditorOpen(true);
   };
   const importSpecies = () => {
-    importCSV({
-      "Ref#":"number",
-      Files:"string",
-      Author:"string",
-      Year:"string",
-      "Title ":"string",
-      Journal:"string",
-      "Vol:Pg":"string"
-    }).then((data)=>{
+    importCSV(SpeciesTypeMap).then((data)=>{
       console.log(data);
     }).catch((err)=>{
       console.log(err);
     })
   }
-
+  const exportSpecies = () => {
+    console.log(family.species)
+    exportCSV(family.species,SpeciesTypeMap)
+  }
   const removeSpecies = (id: UUID) => {
     const originalSpecies: Species | undefined = family.species.find(
       (value) => value.id === id,
@@ -150,7 +146,8 @@ export const SpeciesView = ({ family, updateFamily }: ViewProps) => {
         ]}
         onRowUpdate={handleSpeciesRowUpdate}
         onAdd={createSpecies}
-        onBulkAdd={importSpecies}
+        onImport={importSpecies}
+        onExport={exportSpecies}
       />
       <SpeciesEditorModal
         open={speciesEditorOpen}
